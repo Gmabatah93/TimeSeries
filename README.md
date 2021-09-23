@@ -39,3 +39,53 @@ The predictability of an event or a quantity depends on several factors includin
 **_Inflation Adjustments_**
 
 **_Mathematical Transformations_**
+
+### Time Series Components
+
+**Additive Decomposition:** used if the magnitude of the seasonal fluctuations, or the variation around the trend-cycle, does not vary with the level of the time series.
+
+**Multiplicative Decomposition:** used if the variation in the seasonal pattern, or the variation around the trend-cycle, appears to be proportional to the level of the time series.
+
+**Moving Averages:**
+
+<img src="Images/MovingAvg.PNG" width="300">
+
+**X-11 Method:**
+
+**Seasonal Extraction in ARIMA Time Series (SEATS) Method:**
+
+**Seasonal and Trend decomposition using Loess (STL) Decomposition:**
+
+_Advantages_
+- Unlike SEATS and X-11, STL will handle any type of seasonality, not only monthly and quarterly data.
+- The seasonal component is allowed to change over time, and the rate of change can be controlled by the user.
+- The smoothness of the trend-cycle can also be controlled by the user.
+- It can be robust to outliers (i.e., the user can specify a robust decomposition), so that occasional unusual observations will not affect the estimates of the trend-cycle and seasonal components. They will, however, affect the remainder component.
+
+_Disadvantages_
+- does not handle trading day or calendar variation automatically
+- only provides facilities for additive decompositions
+
+## Time Series Features
+
+### Forecasting Methods
+
+**Mean Method**
+
+<img src="Images/MeanMethod.PNG" width="300">
+
+**Naive Method**
+
+<img src="Images/NaiveMethod.PNG" width="300">
+
+**Seasonal Naive Method**
+
+<img src="Images/SeasonalNaiveMethod.PNG" width="300">
+
+**Drift Method**
+
+<img src="Images/DriftMethod.PNG" width="300">
+
+### Residual Diagnostics
+> 1. Residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
+> 2. Residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.

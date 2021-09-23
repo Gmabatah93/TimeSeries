@@ -1,5 +1,6 @@
 library(fpp3)
 library(tsibble)
+theme_set(theme_minimal())
 
 # Chapter 2: Time Series Graphics ----
 
@@ -143,7 +144,7 @@ y %>%
   ACF(wn) %>%
   autoplot() + labs(title = "White noise")
 
-# Chapter 3: Time Series Decomposition
+# Chapter 3: Time Series Decomposition ----
 
 # Population Adjustments
 global_economy %>%
@@ -171,3 +172,92 @@ print_retail %>%
   facet_grid(name ~ ., scales = "free_y") +
   labs(title = "Turnover: Australian print media industry",
        y = "$AU")
+
+# Time Series Components
+us_retail_employment <- us_employment %>%
+  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
+  select(-Series_ID)
+us_retail_employment %>% 
+  autoplot(Employed) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+dcmp <- us_retail_employment %>%
+  model(stl = STL(Employed))
+dcmp %>%components()
+dcmp %>% components() %>% autoplot()
+  dcmp %>% components() %>%
+  as_tsibble() %>%
+  autoplot(Employed, colour="gray") +
+  geom_line(aes(y=trend), colour = "#D55E00") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+dcmp %>% components() %>%
+    as_tsibble() %>%
+    autoplot(Employed, colour = "gray") +
+    geom_line(aes(y=season_adjust), colour = "#0072B2") +
+    labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+
+# Moving Averages
+global_economy %>%
+  filter(Country == "Australia") %>%
+  autoplot(Exports) +
+  labs(y = "% of GDP", title = "Total Australian exports")
+aus_exports <- global_economy %>%
+  filter(Country == "Australia") %>%
+  mutate(`5-MA` = slider::slide_dbl(Exports, mean,
+                                    .before = 2, 
+                                    .after = 2, 
+                                    .complete = TRUE))
+aus_exports %>%
+  autoplot(Exports) +
+  geom_line(aes(y = `5-MA`), colour = "#D55E00") +
+  labs(y = "% of GDP",
+       title = "Total Australian exports") +
+  guides(colour = guide_legend(title = "series"))
+
+# X-11 Method
+
+# STL Decomposition
+us_retail_employment %>%
+  model(STL(Employed ~ trend(window = 7) + season(window = "periodic"),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot()
+
+# Chapter 4: Time Series Features ----
+
+# Simple Statistics
+tourism %>%
+  features(Trips, list(mean = mean)) %>%
+  arrange(mean)
+
+tourism %>% features(Trips, quantile)
+
+# ACF 
+tourism %>% features(Trips, feat_acf)
+
+# STL
+tourism %>%
+  features(Trips, feat_stl) %>%
+  ggplot(aes(x = trend_strength, y = seasonal_strength_year,
+             col = Purpose)) +
+  geom_point() +
+  facet_wrap(vars(State))
+
+tourism %>%
+  features(Trips, feat_stl) %>%
+  filter(
+    seasonal_strength_year == max(seasonal_strength_year)
+  ) %>%
+  left_join(tourism, by = c("State", "Region", "Purpose")) %>%
+  ggplot(aes(x = Quarter, y = Trips)) +
+  geom_line() +
+  facet_grid(vars(State, Region, Purpose))
+
+# Chapter 5: Forecaster's Toolbox ----
+bricks <- aus_production %>%
+  filter_index("1970 Q1" ~ "2004 Q4")
+
+# Mean Method
+bricks %>% model(MEAN(Bricks))
