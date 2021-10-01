@@ -166,6 +166,7 @@ qplot(Date, cnt, data = bike,
       main = "Bike Rentals in DC")
 
 # Model
+# - 1
 bike_df <- 
   tibble(ds = bike$Date,
          y = bike$cnt)
@@ -189,3 +190,91 @@ bike_MP_df %>%
   geom_point(alpha = 0.3) +
   geom_smooth(method = 'lm', se = FALSE, 
               color = 'red')
+lm(pred~actual, data = bike_MP_df) %>% summary()
+
+# Model 2 (Add Holidays)
+bike_Spec <- prophet() %>% 
+  add_country_holidays(country_name = "US")
+bike_Model_2 <- fit.prophet(bike_Spec, bike_df)
+# Forecast
+bike_Future_2 <- make_future_dataframe(bike_Model_2, periods = 10)
+bike_Forecast_2 <- predict(bike_Model_2, bike_Future_2)
+# - plot
+plot(bike_Model_2, bike_Forecast_2)
+dyplot.prophet(bike_Model_2, bike_Forecast_2)
+prophet_plot_components(bike_Model_2, bike_Forecast_2)
+# Model Performance
+bike_MP_df_2 <- 
+  tibble(pred = bike_Forecast_2$yhat[1:731],
+         actual = bike_Model_2$history$y)
+
+bike_MP_df_2 %>% 
+  ggplot(aes(actual, pred)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = 'lm', se = FALSE, 
+              color = 'red')
+lm(pred~actual, data = bike_MP_df_2) %>% summary()
+
+# Model 3 (Add Temperature)
+# - add temp data
+bike_df <- bike_df %>% 
+  mutate(temp = bike$temp)
+# - model
+bike_Spec_3 <- prophet() %>% 
+  add_country_holidays(country_name = "US") %>%
+  add_regressor(name = "temp")
+bike_Model_3 <- fit.prophet(bike_Spec_3, bike_df)
+
+# - Forecast
+temp <- c(bike_df$temp, runif(10, 0.1,0.3))
+bike_Future_3 <- bike_Future_2 %>% 
+  mutate(temp = temp)
+bike_Forecast_3 <- predict(bike_Model_3, bike_Future_3)
+# - plot: forecast 
+plot(bike_Model_3, bike_Forecast_3)
+dyplot.prophet(bike_Model_3, bike_Forecast_3)
+prophet_plot_components(bike_Model_3, bike_Forecast_3)
+# - Model Performance
+bike_MP_df_3 <- 
+  tibble(pred = bike_Forecast_3$yhat[1:731],
+         actual = bike_Model_3$history$y)
+
+bike_MP_df_3 %>% 
+  ggplot(aes(actual, pred)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = 'lm', se = FALSE, 
+              color = 'red')
+lm(pred~actual, data = bike_MP_df_3) %>% summary()
+
+# Model 3 (Add Humidity)
+# - add temp data
+bike_df <- bike_df %>% 
+  mutate(temp = bike$temp,
+         hum = bike$hum)
+# - model
+bike_Spec_4 <- prophet() %>% 
+  add_country_holidays(country_name = "US") %>%
+  add_regressor(name = "temp") %>% 
+  add_regressor(name = "hum")
+bike_Model_4 <- fit.prophet(bike_Spec_4, bike_df)
+
+# - Forecast
+hum <- c(bike_df$hum, runif(10, 0.4,0.8))
+bike_Future_4 <- bike_Future_3 %>% 
+  mutate(hum = hum)
+bike_Forecast_4 <- predict(bike_Model_4, bike_Future_4)
+# - plot: forecast 
+plot(bike_Model_4, bike_Forecast_4)
+dyplot.prophet(bike_Model_4, bike_Forecast_4)
+prophet_plot_components(bike_Model_4, bike_Forecast_4)
+# - Model Performance
+bike_MP_df_4 <- 
+  tibble(pred = bike_Forecast_4$yhat[1:731],
+         actual = bike_Model_4$history$y)
+
+bike_MP_df_4 %>% 
+  ggplot(aes(actual, pred)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = 'lm', se = FALSE, 
+              color = 'red')
+lm(pred~actual, data = bike_MP_df_4) %>% summary()
