@@ -1,91 +1,134 @@
-# Forecasting
-[reference](https://otexts.com/fpp3/index.html)
-> predicting the future as accurately as possible, given all of the information available, including historical data and knowledge of any future events that might impact the forecasts.
+# Time Series
 
-The predictability of an event or a quantity depends on several factors including:
-- how well we understand the factors that contribute to it
-- how much data is available
-- how similar the future is to the past
-- whether the forecasts can affect the thing we are trying to forecast.
+## Components
+<img src="Images/Components.PNG" width="500">
 
-**Short-term forecasts:** are needed for the scheduling of personnel, production and transportation. As part of the scheduling process, forecasts of demand are often also required.
+**TREND:** a long-term relatively smooth pattern that usually persists for more than one year.
 
-**Medium-term forecasts:** are needed to determine future resource requirements, in order to purchase raw materials, hire personnel, or buy machinery and equipment.
+**SEASONAL:** a pattern that appears in a regular interval wherein the frequency of occurrence is within a year or shorter.
 
-**Long-term forecasts:** are used in strategic planning. Such decisions must take account of market opportunities, environmental factors and internal resources.
+**CYCLICAL:** a repeated pattern that appears in a time-series but beyond a frequency of one year
 
-**USE CASES**
-- Scheduling
-- Strategic Planning
+**RANDOM:** the component of a time-series that is obtained after these three patterns have been removed
 
-**_BASIC STEPS_**
-1. **Problem Definition:** understanding of the way the forecasts will be used, who requires the forecasts, and how the forecasting function fits within the organisation requiring the forecasts.
-2. **Gathering Information:** (a) statistical data, and (b) the accumulated expertise of the people who collect the data and use the forecasts.
-3. **EDA:** Are there consistent patterns? Is there a significant trend? Is seasonality important? Is there evidence of the presence of business cycles? Are there any outliers in the data that need to be explained by those with expert knowledge? How strong are the relationships among the variables available for analysis?
-4. **Choosing & Fitting Models:**  best model to use depends on the availability of historical data, the strength of relationships between the forecast variable and any explanatory variables, and the way in which the forecasts are to be used.
-5. **Using & Evaluating a Forecasting Model:**
+**WHITE NOISE:** variables are independent and identically distributed with a mean of zero. This means that all variables have the same variance and each value has a zero correlation with all other values in the series.
+<img src="Images/WhiteNoise.PNG" width="500">
 
-**_TIME SERIES PATTERNS_**
-- **Trend:** A trend exists when there is a long-term increase or decrease in the data. It does not have to be linear.
-- **Seasonal:** time series is affected by seasonal factors such as the time of the year or the day of the week. Seasonality is always of a fixed and known period.
-- **Cyclic:** data exhibit rises and falls that are not of a fixed frequency. _These fluctuations are usually due to economic conditions, and are often related to the “business cycle.”_
+1. **_Predictability:_** If your time series is white noise, then, by definition, it is random. You cannot reasonably model it and make predictions.
+2. **_Model Diagnostics:_** The series of errors from a time series forecast model should ideally be white noise.
 
-## Time Series Decomposition
+_Not White Noise if:_
+- Is the mean/level non-zero?
+- Does the mean/level change over time?
+- Does the variance change over time?
+- Do values correlate with lag values?
 
-**_Calendar Adjustments_**
+**STATIONARITY:** statistical properties of the process do not change over time. Statistical properties do not depend on the time at which the series is observed. _Thus, time series with trends, or with seasonality, are not stationary — the trend and seasonality will affect the value of the time series at different times. White Noise series is stationary — it does not matter when you observe it, it should look much the same at any point in time._
+ A stationary time series will have no predictable patterns in the long-term. Time plots will show the series to be roughly horizontal (although some cyclic behaviour is possible), with constant variance.
 
-**_Population Adjustments_**
+<img src="Images/Stationary.PNG" width="500">
+<img src="Images/Stationary2.PNG" width="500">
 
-**_Inflation Adjustments_**
+- **_STORNG Stationarity:_** the distribution of a finite sub-sequence of random variables of the stochastic process remains the same as we shift it along the time index axis
+<img src="Images/StationaryCond.PNG" width="300">
+- **_WEAK Stationarity:_** the process has the same mean at all time points, and that the covariance between the values at any two time points, t and t−k, depend only on lag, the difference between the two times, and not on the location of the points along the time axis.
+- **_First Order Stationarity:_** a series that has means that never changes with time, but for which any other moment (like variance) can change.
+- **_Trend Stationarity:_** underlying trend (function solely of time) can be removed, leaving a stationary process.
 
-**_Mathematical Transformations_**
+**DIFFERENCING:** The differences between consecutive observations.
+- A series which is stationary after being differentiated once is said to be integrated of order 1. Therefore a series, which is stationary without being differentiated, is said to be order 0.
+- Transformations such as logarithms can help to stabilize the variance of a time series.
+- Differencing can help stabilize the mean of a time series by removing changes in the level of a time series, and therefore eliminating (or reducing) trend and seasonality.
 
-### Time Series Components
+**_Identifying non-stationary time series_**
+- time plot of the data
+- ACF plot
+  + For a stationary time series, the ACF will drop to zero relatively quickly, while the ACF of non-stationary data decreases slowly.
 
-**Additive Decomposition:** used if the magnitude of the seasonal fluctuations, or the variation around the trend-cycle, does not vary with the level of the time series.
+**_Second Order Differencing:_** model changes in the changes
 
-**Multiplicative Decomposition:** used if the variation in the seasonal pattern, or the variation around the trend-cycle, appears to be proportional to the level of the time series.
+<img src="Images/Differencing2.PNG" width="300">
 
-**Moving Averages:**
+**_Seasonal Differencing:_** difference between an observation and the previous observation from the same season.
 
-<img src="Images/MovingAvg.PNG" width="300">
+<img src="Images/SeasonalDifferencing.PNG" width="300">
 
-**X-11 Method:**
+- If the seasonal difference model appear to be White Noise then
 
-**Seasonal Extraction in ARIMA Time Series (SEATS) Method:**
+  <img src="Images/SeasonalWN.PNG" width="300">
 
-**Seasonal and Trend decomposition using Loess (STL) Decomposition:**
+**_Unit Root Test:_** statistical hypothesis tests of stationarity that are designed for determining whether differencing is required.
+- Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test: null hypothesis is that the data are stationary, and we look for evidence that the null hypothesis is false. Small p-values (e.g., less than 0.05) suggest that differencing is required.
 
-_Advantages_
-- Unlike SEATS and X-11, STL will handle any type of seasonality, not only monthly and quarterly data.
-- The seasonal component is allowed to change over time, and the rate of change can be controlled by the user.
-- The smoothness of the trend-cycle can also be controlled by the user.
-- It can be robust to outliers (i.e., the user can specify a robust decomposition), so that occasional unusual observations will not affect the estimates of the trend-cycle and seasonal components. They will, however, affect the remainder component.
+**RANDOM WALK:**
 
-_Disadvantages_
-- does not handle trading day or calendar variation automatically
-- only provides facilities for additive decompositions
+<img src="Images/RandomWalk.PNG" width="300">
 
-## Time Series Features
+Random walk models are widely used for non-stationary data, particularly financial and economic data. Random walks typically have:
+- long periods of apparent trends up or down
+- sudden and unpredictable changes in direction.
 
-### Forecasting Methods
+**AUTOCORRELATION:** refers to the way the observations in a time series are related to each other and is measured by a simple correlation between the current observation and the observation p periods from the current one
 
-**Mean Method**
+**PARTIAL AUTOCORRELATION:** used to measure the degree of association between Yt and Yt-p when the effects at other time lags are removed
 
-<img src="Images/MeanMethod.PNG" width="300">
+<img src="Images/DetermingModel.PNG" width="500">
 
-**Naive Method**
+## Models: Exponential Smoothing
+### Simple Exponential Smoothing
+> This method is suitable for forecasting data with no clear trend or seasonal pattern. Attach larger weights to more recent observations than to observations from the distant past. Forecasts are calculated using weighted averages, where the weights decrease exponentially as observations come from further in the past — the smallest weights are associated with the oldest observations
 
-<img src="Images/NaiveMethod.PNG" width="300">
+### Holt’s linear trend method
 
-**Seasonal Naive Method**
+### Damped Trend Methods
 
-<img src="Images/SeasonalNaiveMethod.PNG" width="300">
+### Holt-Winters
 
-**Drift Method**
+## Models: ARIMA
+### AutoRegressive Model
+> A time series modeled using an AR model is assumed to be generated as a linear function of its past values, plus a random noise/error
 
-<img src="Images/DriftMethod.PNG" width="300">
+<img src="Images/AutoRegressive.PNG" width="500">
+
+### Moving Average Model
+> A time series modeled using a moving average model, denoted with MA(q), is assumed to be generated as a linear function of the last q+1 random shocks generated by εᵢ, a univariate white noise process:
+
+<img src="Images/MovingAverage.PNG" width="500">
+
+### AutoRegressive Integrated Moving Average (ARMA) Model
+> A time series modeled using an ARMA(p,q) model is assumed to be generated as a linear function of the last p values and the last q+1 random shocks generated by εᵢ, a univariate white noise process:
+
+<img src="Images/ARIMA.PNG" width="500">
+
+**_ARIMA(p,d,q)_**
+
+<img src="Images/ARIMAParams.PNG" width="500">
+<img src="Images/ARIMASpecial.PNG" width="500">
+
+**_ESTIMATION_**
+Maximum Likelihood Estimation
+
+**_AIC_**
+useful for determining the order of an ARIMA model.
+
+### Linear Regression
+
+**Assumptions**
+1. they have mean zero; otherwise the forecasts will be systematically biased.
+2. they are not autocorrelated; otherwise the forecasts will be inefficient, as there is more information in the data that can be exploited.
+3. they are unrelated to the predictor variables; otherwise there would be more information that should be included in the systematic part of the model.
+4. the errors are normally distributed with a constant variance σ2 in order to easily produce prediction intervals.
+
+## Evaluation
 
 ### Residual Diagnostics
-> 1. Residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
-> 2. Residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.
+A good forecasting method will yield innovation residuals with the following properties:
+1. The innovation residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
+2. The innovation residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.
+3. The innovation residuals have constant variance. This is known as “homoscedasticity”.
+4. The innovation residuals are normally distributed.
+
+### Prediction Intervals
+**One-Step**
+
+**Multi-Step**

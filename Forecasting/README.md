@@ -30,6 +30,40 @@ The predictability of an event or a quantity depends on several factors includin
 - **Seasonal:** time series is affected by seasonal factors such as the time of the year or the day of the week. Seasonality is always of a fixed and known period.
 - **Cyclic:** data exhibit rises and falls that are not of a fixed frequency. _These fluctuations are usually due to economic conditions, and are often related to the “business cycle.”_
 
+## Judgmental Forecasting
+- complete lack of historical data
+- new product is being launched
+- new competitor enters the market
+- new and unique market conditions
+
+_Three general settings in which judgmental forecasting is used:_
+1. there are no available data, so that statistical methods are not applicable and judgmental forecasting is the only feasible approach
+2. data are available, statistical forecasts are generated, and these are then adjusted using judgment
+3. data are available and statistical and judgmental forecasts are generated independently and then combined.
+
+**_KEY PRINCIPLES_**
+
+**Set the forecasting task clearly and concisely**
+
+**Implement a systematic approach**
+
+**Document and justify**
+
+**Systematically evaluate forecasts**
+
+**Segregate forecasters and users**
+
+**_Delphi Method_**
+1. A panel of experts is assembled.
+2. Forecasting tasks/challenges are set and distributed to the experts.
+3. Experts return initial forecasts and justifications. These are compiled and summarised in order to provide feedback.
+4. Feedback is provided to the experts, who now review their forecasts in light of the feedback. This step may be iterated until a satisfactory level of consensus is reached.
+5. Final forecasts are constructed by aggregating the experts’ forecasts.
+
+### Analogy Forecasting
+### Scenario Forecasting
+### New Product Forecasting
+
 ## Time Series Decomposition
 
 **_Calendar Adjustments_**

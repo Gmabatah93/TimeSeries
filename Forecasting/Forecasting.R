@@ -256,8 +256,159 @@ tourism %>%
   facet_grid(vars(State, Region, Purpose))
 
 # Chapter 5: Forecaster's Toolbox ----
-bricks <- aus_production %>%
-  filter_index("1970 Q1" ~ "2004 Q4")
 
-# Mean Method
+# WorkFlow
+# - tidy
+gdppc <- global_economy %>%
+  mutate(GDP_per_capita = GDP / Population)
+# - visualize
+gdppc %>%
+  filter(Country == "Sweden") %>%
+  autoplot(GDP_per_capita) +
+  labs(y = "$US", title = "GDP per capita for Sweden")
+# - specify & estimate
+fit <- gdppc %>%
+  model(trend_model = TSLM(GDP_per_capita ~ trend()))
+# - evaluate
+# - forcast
+fit %>%
+  forecast(h = "3 years") %>%
+  filter(Country == "Sweden") %>%
+  autoplot(gdppc) +
+  labs(y = "$US", title = "GDP per capita for Sweden")
+
+# Simple Forcasting Methods
+bricks <- aus_production %>% filter_index("1970 Q1" ~ "2004 Q4")
+# - mean method
 bricks %>% model(MEAN(Bricks))
+# - naive method
+bricks %>% model(NAIVE(Bricks))
+# - seasonal naive method
+bricks %>% model(SNAIVE(Bricks ~ lag("year")))
+# - drift method
+bricks %>% model(RW(Bricks ~ drift()))
+
+# - Example: Australian Quarterly Beer Production
+train <- aus_production %>% filter_index("1992 Q1" ~ "2006 Q4")
+beer_fit <- train %>%
+  model(
+    Mean = MEAN(Beer),
+    `Naïve` = NAIVE(Beer),
+    `Seasonal naïve` = SNAIVE(Beer)
+  )
+beer_fc <- beer_fit %>% forecast(h = 14)
+
+beer_fc %>%
+  autoplot(train, level = NULL) +
+  autolayer(filter_index(aus_production, "2007 Q1" ~ .),colour = "black") +
+  labs(y = "Megalitres",
+       title = "Forecasts for quarterly beer production") +
+  guides(colour = guide_legend(title = "Forecast"))
+
+# - Example: Google Daily Closing Stock Price
+
+# Chapter 6: Judgemental Forecasts ----
+# Chapter 7: Regression Models ----
+# Chapter 8: Exponential Smoothing ----
+
+# Simple Exponential Smoothing
+algeria_economy <- global_economy %>% filter(Country == "Algeria")
+algeria_economy %>%
+  autoplot(Exports) +
+  labs(y = "% of GDP", title = "Exports: Algeria")
+# - model
+fit <- algeria_economy %>%
+  model(ETS(Exports ~ error("A") + trend("N") + season("N")))
+fc <- fit %>%
+  forecast(h = 5)
+fc %>%
+  autoplot(algeria_economy) +
+  geom_line(aes(y = .fitted), col="#D55E00",
+            data = augment(fit)) +
+  labs(y="% of GDP", title="Exports: Algeria") +
+  guides(colour = "none")
+
+# Holts Linear Trend 
+aus_economy <- global_economy %>%
+  filter(Code == "AUS") %>%
+  mutate(Pop = Population / 1e6)
+autoplot(aus_economy, Pop) +
+  labs(y = "Millions", title = "Australian population")
+# - model
+fit <- aus_economy %>%
+  model(AAN = ETS(Pop ~ error("A") + trend("A") + season("N")))
+fc <- fit %>% forecast(h = 10)
+fc %>% 
+  autoplot(aus_economy)
+
+# Chapter 9: ARIMA Models ----
+
+# Stationarity & Differencing
+google_2015 %>%
+  mutate(diff_close = difference(Close)) %>%
+  features(diff_close, ljung_box, lag = 10)
+
+PBS %>%
+  filter(ATC2 == "H02") %>%
+  summarise(Cost = sum(Cost)/1e6) %>%
+  transmute(
+    `Sales ($million)` = Cost,
+    `Log sales` = log(Cost),
+    `Annual change in log sales` = difference(log(Cost), 12),
+    `Doubly differenced log sales` =
+      difference(difference(log(Cost), 12), 1)
+  ) %>%
+  pivot_longer(-Month, names_to="Type", values_to="Sales") %>%
+  mutate(
+    Type = factor(Type, levels = c(
+      "Sales ($million)",
+      "Log sales",
+      "Annual change in log sales",
+      "Doubly differenced log sales"))
+  ) %>%
+  ggplot(aes(x = Month, y = Sales)) +
+  geom_line() +
+  facet_grid(vars(Type), scales = "free_y") +
+  labs(title = "Corticosteroid drug sales", y = NULL)
+
+# - unit test
+google_2015 %>% features(Close, unitroot_kpss)
+google_2015 %>%
+  mutate(diff_close = difference(Close)) %>%
+  features(diff_close, unitroot_kpss)
+# - determines the number of 1st differences to use
+google_2015 %>% features(Close, unitroot_ndiffs)
+# - determine the appropriate number of seasonal differences to use
+aus_total_retail <- aus_retail %>%
+  summarise(Turnover = sum(Turnover))
+aus_total_retail %>%
+  mutate(log_turnover = log(Turnover)) %>%
+  features(log_turnover, unitroot_nsdiffs)
+aus_total_retail %>%
+  mutate(log_turnover = difference(log(Turnover), 12)) %>%
+  features(log_turnover, unitroot_ndiffs)
+
+# ARIMA
+# - data
+global_economy %>%
+  filter(Code == "EGY") %>%
+  autoplot(Exports) +
+  labs(y = "% of GDP", title = "Egyptian Exports")
+# - model
+fit <- global_economy %>%
+  filter(Code == "EGY") %>%
+  model(ARIMA(Exports))
+fit %>% report()
+# - forecast
+fit %>% forecast(h=10) %>%
+  autoplot(global_economy) +
+  labs(y = "% of GDP", title = "Egyptian Exports")
+# - ACF & PACF
+global_economy %>%
+  filter(Code == "EGY") %>%
+  ACF(Exports) %>%
+  autoplot()
+global_economy %>%
+  filter(Code == "EGY") %>%
+  PACF(Exports) %>%
+  autoplot()
