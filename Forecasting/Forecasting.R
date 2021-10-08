@@ -321,6 +321,11 @@ algeria_economy %>%
 fit <- 
   algeria_economy %>%
   model(ETS(Exports ~ error("A") + trend("N") + season("N")))
+fit %>% glance()
+fit %>% tidy()
+fit %>% augment()
+fit %>% components()
+
 # - forecast
 fc <- fit %>%
   forecast(h = 5)
@@ -331,19 +336,107 @@ fc %>%
   labs(y="% of GDP", title="Exports: Algeria") +
   guides(colour = "none")
 
-# Holts Linear Trend 
+
+
+# Holts Linear Trend
+# - data
 aus_economy <- global_economy %>%
   filter(Code == "AUS") %>%
   mutate(Pop = Population / 1e6)
+# - eda
 autoplot(aus_economy, Pop) +
   labs(y = "Millions", title = "Australian population")
 # - model
 fit <- aus_economy %>%
   model(AAN = ETS(Pop ~ error("A") + trend("A") + season("N")))
+fit %>% glance()
+fit %>% tidy()
+fit %>% augment()
+fit %>% components()
+# - model: damped
+aus_economy %>%
+  model(`Holt's method` = ETS(Pop ~ error("A") + trend("A") + season("N")),
+        `Damped Holt's method` = ETS(Pop ~ error("A") + trend("Ad", phi = 0.9) + season("N"))) %>%
+  forecast(h = 15) %>%
+  autoplot(aus_economy, level = NULL) +
+  labs(title = "Australian population", y = "Millions") +
+  guides(colour = guide_legend(title = "Forecast"))
+
+# - forecast
 fc <- fit %>% forecast(h = 10)
 fc %>% 
   autoplot(aus_economy)
 
+
+# - Internet Usage
+www_usage <- as_tsibble(WWWusage)
+
+www_usage %>% 
+  autoplot(value) +
+  labs(x="Minute", y="Number of users",
+       title = "Internet usage per minute")
+
+www_usage %>%
+  stretch_tsibble(.init = 10) %>%
+  model(SES = ETS(value ~ error("A") + trend("N") + season("N")),
+        Holt = ETS(value ~ error("A") + trend("A") + season("N")),
+        Damped = ETS(value ~ error("A") + trend("Ad") + season("N"))
+  ) %>%
+  forecast(h = 1) %>%
+  accuracy(www_usage)
+
+
+fit <- www_usage %>%
+  model(Damped = ETS(value ~ error("A") + trend("Ad") + season("N")))
+fit %>% tidy()
+fit %>%
+  forecast(h = 10) %>%
+  autoplot(www_usage) +
+  labs(x="Minute", y="Number of users",
+       title = "Internet usage per minute")
+
+
+
+
+# Holt-Winters
+# - data
+aus_holidays <- tourism %>%
+  filter(Purpose == "Holiday") %>%
+  summarise(Trips = sum(Trips)/1e3)
+# - model
+fit <- aus_holidays %>%
+  model(additive = ETS(Trips ~ error("A") + trend("A") + season("A")),
+        multiplicative = ETS(Trips ~ error("M") + trend("A") + season("M")))
+fit %>% glance()
+fit %>% tidy()
+fit %>% augment()
+fit %>% components()
+# - forecast
+fc <- fit %>% forecast(h = "3 years")
+fc %>%
+  autoplot(aus_holidays, level = NULL) +
+  labs(title="Australian domestic tourism",
+       y="Overnight trips (millions)") +
+  guides(colour = guide_legend(title = "Forecast"))
+
+# - damped
+sth_cross_ped <- pedestrian %>%
+  filter(Date >= "2016-07-01",
+         Sensor == "Southern Cross Station") %>%
+  index_by(Date) %>%
+  summarise(Count = sum(Count)/1000)
+sth_cross_ped %>%
+  filter(Date <= "2016-07-31") %>%
+  model(
+    hw = ETS(Count ~ error("M") + trend("Ad") + season("M"))
+  ) %>%
+  forecast(h = "2 weeks") %>%
+  autoplot(sth_cross_ped %>% filter(Date <= "2016-08-14")) +
+  labs(title = "Daily traffic: Southern Cross",
+       y="Pedestrians ('000)")
+
+
+#
 # Chapter 9: ARIMA Models ----
 
 # Stationarity & Differencing
