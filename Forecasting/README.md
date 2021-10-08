@@ -1,4 +1,3 @@
-# Forecasting
 [reference](https://otexts.com/fpp3/index.html)
 > predicting the future as accurately as possible, given all of the information available, including historical data and knowledge of any future events that might impact the forecasts.
 
@@ -30,7 +29,7 @@ The predictability of an event or a quantity depends on several factors includin
 - **Seasonal:** time series is affected by seasonal factors such as the time of the year or the day of the week. Seasonality is always of a fixed and known period.
 - **Cyclic:** data exhibit rises and falls that are not of a fixed frequency. _These fluctuations are usually due to economic conditions, and are often related to the “business cycle.”_
 
-## Judgmental Forecasting
+# Judgmental Forecasting
 - complete lack of historical data
 - new product is being launched
 - new competitor enters the market
@@ -60,11 +59,11 @@ _Three general settings in which judgmental forecasting is used:_
 4. Feedback is provided to the experts, who now review their forecasts in light of the feedback. This step may be iterated until a satisfactory level of consensus is reached.
 5. Final forecasts are constructed by aggregating the experts’ forecasts.
 
-### Analogy Forecasting
-### Scenario Forecasting
-### New Product Forecasting
+## Analogy Forecasting
+## Scenario Forecasting
+## New Product Forecasting
 
-## Time Series Decomposition
+# Time Series Decomposition
 
 **_Calendar Adjustments_**
 
@@ -74,7 +73,7 @@ _Three general settings in which judgmental forecasting is used:_
 
 **_Mathematical Transformations_**
 
-### Time Series Components
+## Time Series Components
 
 **Additive Decomposition:** used if the magnitude of the seasonal fluctuations, or the variation around the trend-cycle, does not vary with the level of the time series.
 
@@ -100,9 +99,9 @@ _Disadvantages_
 - does not handle trading day or calendar variation automatically
 - only provides facilities for additive decompositions
 
-## Time Series Features
+# Time Series Features
 
-### Forecasting Methods
+## Forecasting Methods
 
 **Mean Method**
 
@@ -120,6 +119,24 @@ _Disadvantages_
 
 <img src="Images/DriftMethod.PNG" width="300">
 
-### Residual Diagnostics
+## Residual Diagnostics
 > 1. Residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
 > 2. Residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.
+
+# Exponential Smoothing
+
+## Simple Exponential Smoothing
+> suitable for forecasting data with no clear trend or seasonal pattern
+
+<img src="Images/SES.PNG" width="300">
+
+_Forecasts are calculated using weighted averages, where the weights decrease exponentially as observations come from further in the past — the smallest weights are associated with the oldest observations_
+- If α is small (i.e., close to 0), more weight is given to observations from the more distant past.
+- If α is large (i.e., close to 1), more weight is given to the more recent observations.
+- For the extreme case where α = 1, yT+1|T=yT, and the forecasts are equal to the naïve forecasts.
+
+**_OPTIMIZATION_**
+
+<img src="Images/SES_Opt.PNG" width="300">
+
+# ARIMA Models

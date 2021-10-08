@@ -2,6 +2,7 @@ library(fpp3)
 library(tsibble)
 theme_set(theme_minimal())
 
+#
 # Chapter 2: Time Series Graphics ----
 
 # tsibble() Objects
@@ -317,8 +318,10 @@ algeria_economy %>%
   autoplot(Exports) +
   labs(y = "% of GDP", title = "Exports: Algeria")
 # - model
-fit <- algeria_economy %>%
+fit <- 
+  algeria_economy %>%
   model(ETS(Exports ~ error("A") + trend("N") + season("N")))
+# - forecast
 fc <- fit %>%
   forecast(h = 5)
 fc %>%

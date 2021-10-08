@@ -4,8 +4,10 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 theme_set(theme_minimal())
-library(prophet) # https://facebook.github.io/prophet/
-
+library(tsibble)
+library(feasts)
+library(fable)
+library(prophet) 
 
 #
 # Decomposition ----
@@ -278,3 +280,145 @@ bike_MP_df_4 %>%
   geom_smooth(method = 'lm', se = FALSE, 
               color = 'red')
 lm(pred~actual, data = bike_MP_df_4) %>% summary()
+
+# EXAPMLE: Tourism (Single): ----
+# Data
+tourism
+
+# EDA
+# - total overnight trips
+tourism_aus <- tourism %>% 
+  summarise(Trips = sum(Trips))
+tourism_aus %>% autoplot()
+
+# Model
+fit <- tourism_aus %>% 
+  model(auto_ets = ETS(Trips))
+fit %>% report()
+fit %>% tidy()
+fit %>% augment()
+fit %>% glance()
+
+# Forecast
+fc <- fit %>% 
+  forecast(h = "2 years")
+# - plot
+fc %>% 
+  autoplot(tourism_aus)
+# - intervals
+fc %>% 
+  hilo(level = c(80,95))
+
+# Choosing the best model
+fits <- tourism_aus %>% 
+  model(
+    ets = ETS(Trips),
+    arima = ARIMA(Trips),
+    lm = TSLM(Trips ~ trend() + season())
+  )
+# - plot
+fits %>% 
+  forecast(h = "2 years") %>% 
+  autoplot(tourism_aus, level = 80, alpha = 0.5)
+# - metrics (in sample)
+fits %>% accuracy()
+
+# - metrics (out of sample)
+tourism_aus %>% 
+  # Withhold the last 3 years before fitting the model
+  filter(Quarter < yearquarter("2015 Q1")) %>% 
+  # Estimate the models on the training data (1998-2014)
+  model(
+    ets = ETS(Trips),
+    arima = ARIMA(Trips),
+    lm = TSLM(Trips ~ trend() + season())
+  ) %>% 
+  # Forecast the witheld time peroid (2015-2017)
+  forecast(h = "3 years") %>% 
+  # Compute accuracy of the forecasts relative to the actual data 
+  accuracy(tourism_aus)
+
+# Avg ETS ARIMA Model
+fit_ETS_ARIMA <- tourism_aus %>% 
+  model(
+    ets = ETS(Trips),
+    arima = ARIMA(Trips)
+  ) %>% 
+  mutate(
+    average = (ets + arima) / 2
+  )
+fit_ETS_ARIMA
+# - plot
+fit_ETS_ARIMA %>% 
+  forecast(h = "2 years") %>% 
+  autoplot(tourism_aus, level = 80, alpha = 0.5)
+
+# EXAMPLE: Tourism (Multiple): ----
+
+# Data
+tourism_state <- tourism %>% 
+  group_by(State) %>% 
+  summarise(Trips = sum(Trips))
+
+# EDA
+tourism_state %>% 
+  autoplot(Trips)
+
+# Model
+fit <- tourism_state %>% 
+  model(
+    ets = ETS(Trips),
+    arima = ARIMA(Trips)
+  ) %>% 
+  mutate(
+    average = (ets + arima)/2
+  )
+
+# Forecast
+fit %>% 
+  forecast(h = "2 years") %>% 
+  autoplot(tourism_state, level = NULL)
+
+# EXAMPLE: ----
+
+# Data
+vic_cafe <- aus_retail %>% 
+  filter(State == "Victoria", Industry == "Cafes, restaurants and catering services")
+
+
+# EDA
+vic_cafe %>% autoplot(Turnover)
+
+# Model
+fit_vic_cafe <- vic_cafe %>% 
+  model(ETS(Turnover ~ season("M")))
+vic_cafe %>% 
+  model(ETS(log(Turnover) ~ season("A")))
+
+# Diagnostics
+fit_vic_cafe %>% augment()
+fit_vic_cafe %>% tidy()
+fit_vic_cafe %>% glance()
+fit_vic_cafe %>% 
+  components() %>% 
+  gather(component, value, level, slope, season) %>% 
+  ggplot(aes(Month, value)) +
+  geom_line() +
+  facet_grid(vars(component), scales = "free_y")
+
+# Forecast
+fc_vic_cafe <- fit_vic_cafe %>% forecast(h = 24)
+fc_vic_cafe %>% autoplot(vic_cafe)
+
+
+# EXAMPLE: ----
+# Data
+vic_elec
+
+# EDA
+vic_elec %>% autoplot(Demand)
+
+# Model
+vic_elec %>% 
+  model(ARIMA(Demand ~ Holiday + Temperature + I(Temperature^2) + 
+                pdq(1,0,1) + PDQ(1,1,1, period = "day")))

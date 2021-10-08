@@ -21,5 +21,33 @@ the analyst to impose assumptions on the forecast. Moreover, analysts typically 
 have experience with regression and are easily able to extend the model to include
 new components
 
-### #1 Trend model
-### #2 Seasonality 
+### Trend Model
+
+**_Nonlinear: Saturated Growth_**
+
+_When forecasting growth, there is usually some maximum achievable point: total market size, total population size, etc. This is called the carrying capacity, and the forecast should saturate at this point._
+
+**_Linear: w/ Change Points_**
+
+**_Trend Forecast Uncertainty_**
+
+### Seasonality
+
+### Holidays and Events
+
+### Analyst-in-the-Loop Modeling
+
+1. **_Capacities:_** Analysts may have external data for the total market size and can apply
+that knowledge directly by specifying capacities.
+
+2. **_Changepoints:_** Known dates of changepoints, such as dates of product changes, can
+be directly specified.
+
+3. **_Holidays and seasonality:_** Analysts that we work with have experience with which
+holidays impact growth in which regions, and they can directly input the relevant
+holiday dates and the applicable time scales of seasonality.
+
+4. **_Smoothing parameters:_** By adjusting τ an analyst can select from within a range
+of more global or locally smooth models. The seasonality and holiday smoothing
+parameters (σ, ν) allow the analyst to tell the model how much of the historical
+seasonal variation is expected in the future.
