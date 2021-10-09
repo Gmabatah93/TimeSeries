@@ -125,6 +125,8 @@ _Disadvantages_
 
 # Exponential Smoothing
 
+<img src="Images/Expo_Sum.PNG" width="600">
+
 ## Simple Exponential Smoothing
 > suitable for forecasting data with no clear trend or seasonal pattern
 
@@ -168,6 +170,7 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 - The level equation shows a weighted average between the seasonally adjusted observation _[y(t) − s(t) − m]_
 - The non-seasonal forecast _[ℓ(t) − 1 + b(t) − 1]_ for time **t**
 - The trend equation is identical to Holt’s linear method. The seasonal equation shows a weighted average between the current seasonal index, [y(t) − ℓ(t) − 1 − b(t) − 1], and the seasonal index of the same season last year _(i.e., m time periods ago)_.
+
 ### Multiplicative Method
 > preferred when the seasonal variations are changing proportional to the level of the series
 
@@ -177,3 +180,11 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 <img src="Images/HW_Damped.PNG" width="500">
 
 # ARIMA Models
+
+<img src="Images/Models.PNG" width="800">
+
+# Regression Models
+
+<img src="Images/Resids_Assumptions.PNG" width="500">
+
+<img src="Images/Metrics.PNG" width="500">

@@ -281,6 +281,32 @@ bike_MP_df_4 %>%
               color = 'red')
 lm(pred~actual, data = bike_MP_df_4) %>% summary()
 
+# EXAMPLE: Tourism: ----
+
+# Data
+tourism
+# - filter
+snowy <- tourism %>% 
+  filter(Region == "Snowy Mountains",
+         Purpose == "Holiday")
+
+# EDA
+snowy %>% autoplot(Trips)
+
+# Model 
+fit <- snowy %>%
+  model(snaive = SNAIVE(Trips ~ lag("year")),
+        ets = ETS(Trips),
+        arima = ARIMA(Trips))
+
+# Forecast
+fc <- fit %>% forecast(h = 12)
+fc %>%
+  autoplot(snowy, level = NULL) +
+  ggtitle("Forecasts for Snowy Mountains holidays") +
+  xlab("Year") +
+  guides(colour = guide_legend(title = "Forecast"))
+#
 # EXAPMLE: Tourism (Single): ----
 # Data
 tourism

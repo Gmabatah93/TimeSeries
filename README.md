@@ -1,8 +1,14 @@
 # Time Series
 
 ## Temporal Data
-
+[reference](https://bookdown.org/rdpeng/timeseriesbook/)
 ## Frequency & Time Scale Analysis
+
+## State Space Models
+
+**state equation:** describes how the system evolves from one time point to the next.
+
+**observation equation:** describes how the underlying state is transformed (with noise added) into something that we directly measure.
 
 ## Components
 <img src="Images/Components.PNG" width="500">
@@ -14,18 +20,6 @@
 **CYCLICAL:** a repeated pattern that appears in a time-series but beyond a frequency of one year
 
 **RANDOM:** the component of a time-series that is obtained after these three patterns have been removed
-
-**WHITE NOISE:** variables are independent and identically distributed with a mean of zero. This means that all variables have the same variance and each value has a zero correlation with all other values in the series.
-<img src="Images/WhiteNoise.PNG" width="500">
-
-1. **_Predictability:_** If your time series is white noise, then, by definition, it is random. You cannot reasonably model it and make predictions.
-2. **_Model Diagnostics:_** The series of errors from a time series forecast model should ideally be white noise.
-
-_Not White Noise if:_
-- Is the mean/level non-zero?
-- Does the mean/level change over time?
-- Does the variance change over time?
-- Do values correlate with lag values?
 
 **STATIONARITY:** statistical properties of the process do not change over time (i.e. distribution of the data does not depend on time). Statistical properties do not depend on the time at which the series is observed. _Thus, time series with trends, or with seasonality, are not stationary — the trend and seasonality will affect the value of the time series at different times. White Noise series is stationary — it does not matter when you observe it, it should look much the same at any point in time._
  A stationary time series will have no predictable patterns in the long-term. Time plots will show the series to be roughly horizontal (although some cyclic behaviour is possible), with constant variance.
@@ -64,7 +58,38 @@ _Not White Noise if:_
 **_Unit Root Test:_** statistical hypothesis tests of stationarity that are designed for determining whether differencing is required.
 - Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test: null hypothesis is that the data are stationary, and we look for evidence that the null hypothesis is false. Small p-values (e.g., less than 0.05) suggest that differencing is required.
 
-**RANDOM WALK:**
+**AUTOCORRELATION:** refers to the way the observations in a time series are related to each other and is measured by a simple correlation between the current observation and the observation p periods from the current one
+
+- _Regression errors are assumed to be uncorrelated. Accommodating autocorrelated errors makes time series analysis difficult and requires special models so that:_
+  1. CIs are incorrect
+  2. Take advantage when Forecasting
+
+- **_Tests:_** Ljung-Box, Box-Pierce, Durbin-Watson
+  + Null = the first h autocorrelations all equal 0 _(i.e no autocorrelations)_ versus the alternative that at least one is nonzero
+
+**PARTIAL AUTOCORRELATION:** used to measure the degree of association between Yt and Yt-p when the effects at other time lags are removed
+
+<img src="Images/DetermingModel.PNG" width="500">
+
+## Models: Baseline  
+
+<img src="Images/Which.PNG" width="500">
+
+### WHITE NOISE
+> variables are independent and identically distributed with a mean of zero. This means that all variables have the same variance and each value has a zero correlation with all other values in the series.
+
+<img src="Images/WhiteNoise.PNG" width="500">
+
+1. **_Predictability:_** If your time series is white noise, then, by definition, it is random. You cannot reasonably model it and make predictions.
+2. **_Model Diagnostics:_** The series of errors from a time series forecast model should ideally be white noise.
+
+_Not White Noise if:_
+- Is the mean/level non-zero?
+- Does the mean/level change over time?
+- Does the variance change over time?
+- Do values correlate with lag values?
+
+### RANDOM WALK
 
 <img src="Images/RandomWalk.PNG" width="300">
 
@@ -72,11 +97,11 @@ Random walk models are widely used for non-stationary data, particularly financi
 - long periods of apparent trends up or down
 - sudden and unpredictable changes in direction.
 
-**AUTOCORRELATION:** refers to the way the observations in a time series are related to each other and is measured by a simple correlation between the current observation and the observation p periods from the current one
+<img src="Images/RandomWalk_Drift.PNG" width="300">
 
-**PARTIAL AUTOCORRELATION:** used to measure the degree of association between Yt and Yt-p when the effects at other time lags are removed
+### SEASONAL NAIVE
 
-<img src="Images/DetermingModel.PNG" width="500">
+<img src="Images/SeasonalNaive.PNG" width="300">
 
 ## Models: Exponential Smoothing
 ### Simple Exponential Smoothing
