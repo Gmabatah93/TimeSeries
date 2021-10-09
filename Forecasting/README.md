@@ -171,8 +171,9 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 ### Multiplicative Method
 > preferred when the seasonal variations are changing proportional to the level of the series
 
-<img src="Images/HW_Multi .PNG" width="500">
+<img src="Images/HW_Multi.PNG" width="500">
 
 ### Damped
+<img src="Images/HW_Damped.PNG" width="500">
 
 # ARIMA Models

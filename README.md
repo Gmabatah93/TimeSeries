@@ -1,5 +1,9 @@
 # Time Series
 
+## Temporal Data
+
+## Frequency & Time Scale Analysis
+
 ## Components
 <img src="Images/Components.PNG" width="500">
 
@@ -23,7 +27,7 @@ _Not White Noise if:_
 - Does the variance change over time?
 - Do values correlate with lag values?
 
-**STATIONARITY:** statistical properties of the process do not change over time. Statistical properties do not depend on the time at which the series is observed. _Thus, time series with trends, or with seasonality, are not stationary — the trend and seasonality will affect the value of the time series at different times. White Noise series is stationary — it does not matter when you observe it, it should look much the same at any point in time._
+**STATIONARITY:** statistical properties of the process do not change over time (i.e. distribution of the data does not depend on time). Statistical properties do not depend on the time at which the series is observed. _Thus, time series with trends, or with seasonality, are not stationary — the trend and seasonality will affect the value of the time series at different times. White Noise series is stationary — it does not matter when you observe it, it should look much the same at any point in time._
  A stationary time series will have no predictable patterns in the long-term. Time plots will show the series to be roughly horizontal (although some cyclic behaviour is possible), with constant variance.
 
 <img src="Images/Stationary.PNG" width="500">
