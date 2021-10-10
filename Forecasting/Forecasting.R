@@ -1,5 +1,4 @@
 library(fpp3)
-library(tsibble)
 theme_set(theme_minimal())
 
 #
@@ -184,20 +183,22 @@ us_retail_employment %>%
        title = "Total employment in US retail")
 dcmp <- us_retail_employment %>%
   model(stl = STL(Employed))
-dcmp %>%components()
+dcmp %>% components()
+
 dcmp %>% components() %>% autoplot()
-  dcmp %>% components() %>%
+dcmp %>% components() %>%
   as_tsibble() %>%
   autoplot(Employed, colour="gray") +
   geom_line(aes(y=trend), colour = "#D55E00") +
   labs(y = "Persons (thousands)",
        title = "Total employment in US retail")
-dcmp %>% components() %>%
-    as_tsibble() %>%
-    autoplot(Employed, colour = "gray") +
-    geom_line(aes(y=season_adjust), colour = "#0072B2") +
-    labs(y = "Persons (thousands)",
-         title = "Total employment in US retail")
+dcmp %>% 
+  components() %>%
+  as_tsibble() %>%
+  autoplot(Employed, colour = "gray") +
+  geom_line(aes(y=season_adjust), colour = "#0072B2") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
 
 # Moving Averages
 global_economy %>%
@@ -206,18 +207,74 @@ global_economy %>%
   labs(y = "% of GDP", title = "Total Australian exports")
 aus_exports <- global_economy %>%
   filter(Country == "Australia") %>%
-  mutate(`5-MA` = slider::slide_dbl(Exports, mean,
+  mutate(`3-MA` = slider::slide_dbl(Exports, mean,
+                                    .before = 1, 
+                                    .after = 1, 
+                                    .complete = TRUE),
+         `5-MA` = slider::slide_dbl(Exports, mean,
                                     .before = 2, 
                                     .after = 2, 
-                                    .complete = TRUE))
+                                    .complete = TRUE),
+         `7-MA` = slider::slide_dbl(Exports, mean,
+                                    .before = 3, 
+                                    .after = 3, 
+                                    .complete = TRUE),
+         `9-MA` = slider::slide_dbl(Exports, mean,
+                                    .before = 4, 
+                                    .after = 4, 
+                                    .complete = TRUE)
+  )
 aus_exports %>%
   autoplot(Exports) +
-  geom_line(aes(y = `5-MA`), colour = "#D55E00") +
+  geom_line(aes(y = `3-MA`), colour = "blue") +
+  geom_line(aes(y = `5-MA`), colour = "red") +
+  geom_line(aes(y = `7-MA`), colour = "yellow") +
+  geom_line(aes(y = `9-MA`), colour = "green") +
   labs(y = "% of GDP",
-       title = "Total Australian exports") +
+       title = "Total Australian exports",
+       subtitle = "5-MA") +
   guides(colour = guide_legend(title = "series"))
 
+# Estimating the trend-cycle with seasonal data
+us_retail_employment_ma <- us_retail_employment %>%
+  mutate(
+    `12-MA` = slider::slide_dbl(Employed, mean,
+                                .before = 5, .after = 6, .complete = TRUE),
+    `2x12-MA` = slider::slide_dbl(`12-MA`, mean,
+                                  .before = 1, .after = 0, .complete = TRUE)
+  )
+us_retail_employment_ma %>%
+  autoplot(Employed, colour = "gray") +
+  geom_line(aes(y = `2x12-MA`), colour = "#D55E00") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+
+# Additive Method
+us_retail_employment %>%
+  model(
+    classical_decomposition(Employed, type = "additive")
+  ) %>%
+  components() %>%
+  autoplot() +
+  labs(title = "Classical additive decomposition of total
+                  US retail employment")
+
 # X-11 Method
+x11_dcmp <- us_retail_employment %>%
+  model(x11 = X_13ARIMA_SEATS(Employed ~ x11())) %>%
+  components()
+x11_dcmp %>% 
+  autoplot() +
+  labs(title =
+         "Decomposition of total US retail employment using X-11.")
+
+# SEATS
+seats_dcmp <- us_retail_employment %>%
+  model(seats = X_13ARIMA_SEATS(Employed ~ seats())) %>%
+  components()
+autoplot(seats_dcmp) +
+  labs(title =
+         "Decomposition of total US retail employment using SEATS")
 
 # STL Decomposition
 us_retail_employment %>%

@@ -63,16 +63,6 @@ _Three general settings in which judgmental forecasting is used:_
 ## Scenario Forecasting
 ## New Product Forecasting
 
-# Time Series Decomposition
-
-**_Calendar Adjustments_**
-
-**_Population Adjustments_**
-
-**_Inflation Adjustments_**
-
-**_Mathematical Transformations_**
-
 ## Time Series Components
 
 **Additive Decomposition:** used if the magnitude of the seasonal fluctuations, or the variation around the trend-cycle, does not vary with the level of the time series.
@@ -128,7 +118,7 @@ _Disadvantages_
 <img src="Images/Expo_Sum.PNG" width="600">
 
 ## Simple Exponential Smoothing
-> suitable for forecasting data with no clear trend or seasonal pattern
+> suitable for forecasting data with no clear trend or seasonal pattern. Similar to Moving Average, however gives more weight to recent observations.
 
 <img src="Images/SES.PNG" width="300">
 
@@ -142,6 +132,7 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 <img src="Images/SES_Opt.PNG" width="300">
 
 ## Holts Linear Trend Model
+> With a trend present, we can do better than jsut estimating the current level to forecast the future observations. We'll estimate the slope at time t _(call it the "current" trend and denote it by **b(t)**), as well as the current level **l(t)**_
 
 <img src="Images/Holt.PNG" width="500">
 

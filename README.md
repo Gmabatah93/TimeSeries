@@ -1,7 +1,10 @@
+[reference](https://bookdown.org/rdpeng/timeseriesbook/) \
+[reference](https://www.youtube.com/watch?v=KbzCi2qD9eg&list=PLDD7yyOAeWWc-CBJuXcF6WRa2dhLwiHC0&ab_channel=EdwardMalthouse)
+
 # Time Series
 
 ## Temporal Data
-[reference](https://bookdown.org/rdpeng/timeseriesbook/)
+
 ## Frequency & Time Scale Analysis
 
 ## State Space Models
@@ -11,16 +14,6 @@
 **observation equation:** describes how the underlying state is transformed (with noise added) into something that we directly measure.
 
 ## Components
-<img src="Images/Components.PNG" width="500">
-
-**TREND:** a long-term relatively smooth pattern that usually persists for more than one year.
-
-**SEASONAL:** a pattern that appears in a regular interval wherein the frequency of occurrence is within a year or shorter.
-
-**CYCLICAL:** a repeated pattern that appears in a time-series but beyond a frequency of one year
-
-**RANDOM:** the component of a time-series that is obtained after these three patterns have been removed
-
 **STATIONARITY:** statistical properties of the process do not change over time (i.e. distribution of the data does not depend on time). Statistical properties do not depend on the time at which the series is observed. _Thus, time series with trends, or with seasonality, are not stationary — the trend and seasonality will affect the value of the time series at different times. White Noise series is stationary — it does not matter when you observe it, it should look much the same at any point in time._
  A stationary time series will have no predictable patterns in the long-term. Time plots will show the series to be roughly horizontal (although some cyclic behaviour is possible), with constant variance.
 
@@ -70,6 +63,67 @@
 **PARTIAL AUTOCORRELATION:** used to measure the degree of association between Yt and Yt-p when the effects at other time lags are removed
 
 <img src="Images/DetermingModel.PNG" width="500">
+
+# Time Series Decomposition
+> Typically used for Description
+
+**_Calendar Adjustments_**
+> For example, if you are studying the total monthly sales in a retail store, there will be variation between the months simply because of the different numbers of trading days in each month, in addition to the seasonal variation across the year. It is easy to remove this variation by computing average sales per trading day in each month, rather than total sales in the month. Then we effectively remove the calendar variation.
+
+**_Population Adjustments_**
+> Any data that are affected by population changes can be adjusted to give per-capita data. That is, consider the data per person (or per thousand people, or per million people) rather than the total.
+
+**_Inflation Adjustments_**
+> For example, the average cost of a new house will have increased over the last few decades due to inflation. A $200,000 house this year is not the same as a $200,000 house twenty years ago.
+
+**_Mathematical Transformations_**
+- Logarithmic
+- Power
+
+<img src="Images/Components.PNG" width="500">
+
+**TREND:** a long-term relatively smooth pattern that usually persists for more than one year.
+
+**SEASONAL:** a pattern that appears in a regular interval wherein the frequency of occurrence is within a year or shorter.
+
+**CYCLICAL:** a repeated pattern that appears in a time-series but beyond a frequency of one year
+
+**RANDOM:** the component of a time-series that is obtained after these three patterns have been removed
+
+### Classical Decomposition
+**_Additive_**
+1. If **m** is an even number, compute the trend-cycle component using a 2×m-MA. If **m** is an odd number, compute the trend-cycle component using an m-MA.
+2. Calculate the detrended series: y(t) - T(t)
+3. To estimate the seasonal component for each season, simply average the detrended values for that season. For example, with monthly data, the seasonal component for March is the average of all the detrended March values in the data. These seasonal component values are then adjusted to ensure that they add to zero. The seasonal component is obtained by stringing together these monthly values, and then replicating the sequence for each year of data. This gives **St**.
+4. The remainder component is calculated by subtracting the estimated seasonal and trend-cycle components
+
+**_Multiplicative_**
+1. If **m** is an even number, compute the trend-cycle component using a 2×m-MA. If **m** is an odd number, compute the trend-cycle component using an m-MA.
+2. Calculate the detrended series: y(t)/T(t)
+3. To estimate the seasonal component for each season, simply average the detrended values for that season. For example, with monthly data, the seasonal index for March is the average of all the detrended March values in the data. These seasonal indexes are then adjusted to ensure that they add to
+m. The seasonal component is obtained by stringing together these monthly indexes, and then replicating the sequence for each year of data. This gives
+S(t).
+4. The remainder component is calculated by dividing out the estimated seasonal and trend-cycle components
+
+**LIMITATIONS**
+1. Cycle-Trend estimates not available at the ends.
+2. Seasonal Components assumed constant over time.
+3. Cannot control smoothness of cycle-trend
+
+### X-11
+> trend-cycle estimates are available for all observations including the end points, and the seasonal component is allowed to vary slowly over time. X-11 also handles trading day variation, holiday effects and the effects of known predictors.
+
+### SEATS
+
+### STL
+> - Unlike SEATS and X-11, STL will handle any type of seasonality, not only monthly and quarterly data.
+> - The seasonal component is allowed to change over time, and the rate of change can be controlled by the user.
+> - The smoothness of the trend-cycle can also be controlled by the user.
+> - It can be robust to outliers (i.e., the user can specify a robust decomposition), so that occasional unusual observations will not affect the estimates of the trend-cycle and seasonal components. They will, however, affect the remainder component.
+
+**_Parameters_**
+- **_trend:_** number of consecutive observations to be used when estimating the trend-cycle
+- **_season:_** number of consecutive years to be used in estimating each value in the seasonal component
 
 ## Models: Baseline  
 
