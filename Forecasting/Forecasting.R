@@ -370,10 +370,18 @@ beer_fc %>%
 # Chapter 8: Exponential Smoothing ----
 
 # Simple Exponential Smoothing
+# - data
 algeria_economy <- global_economy %>% filter(Country == "Algeria")
+# - eda
 algeria_economy %>%
   autoplot(Exports) +
   labs(y = "% of GDP", title = "Exports: Algeria")
+algeria_economy %>% ACF(y = Exports) %>% autoplot()
+algeria_economy %>%
+  model(stl = STL(Exports)) %>% 
+  components() %>% 
+  autoplot()
+
 # - model
 fit <- 
   algeria_economy %>%
@@ -382,7 +390,6 @@ fit %>% glance()
 fit %>% tidy()
 fit %>% augment()
 fit %>% components()
-
 # - forecast
 fc <- fit %>%
   forecast(h = 5)
@@ -393,16 +400,20 @@ fc %>%
   labs(y="% of GDP", title="Exports: Algeria") +
   guides(colour = "none")
 
-
-
 # Holts Linear Trend
 # - data
 aus_economy <- global_economy %>%
   filter(Code == "AUS") %>%
   mutate(Pop = Population / 1e6)
 # - eda
-autoplot(aus_economy, Pop) +
+aus_economy %>%  
+  autoplot(Pop) +
   labs(y = "Millions", title = "Australian population")
+aus_economy %>% ACF(y = Exports) %>% autoplot()
+aus_economy %>% 
+  model(stl = STL(Pop)) %>% 
+  components() %>% 
+  autoplot()
 # - model
 fit <- aus_economy %>%
   model(AAN = ETS(Pop ~ error("A") + trend("A") + season("N")))
@@ -410,6 +421,10 @@ fit %>% glance()
 fit %>% tidy()
 fit %>% augment()
 fit %>% components()
+# - forecast
+fc <- fit %>% forecast(h = 10)
+fc %>% 
+  autoplot(aus_economy)
 # - model: damped
 aus_economy %>%
   model(`Holt's method` = ETS(Pop ~ error("A") + trend("A") + season("N")),
@@ -419,11 +434,6 @@ aus_economy %>%
   labs(title = "Australian population", y = "Millions") +
   guides(colour = guide_legend(title = "Forecast"))
 
-# - forecast
-fc <- fit %>% forecast(h = 10)
-fc %>% 
-  autoplot(aus_economy)
-
 
 # - Internet Usage
 www_usage <- as_tsibble(WWWusage)
@@ -432,6 +442,11 @@ www_usage %>%
   autoplot(value) +
   labs(x="Minute", y="Number of users",
        title = "Internet usage per minute")
+www_usage %>% ACF(y = value) %>% autoplot()
+www_usage %>% 
+  model(stl = STL(value)) %>% 
+  components() %>% 
+  autoplot()
 
 www_usage %>%
   stretch_tsibble(.init = 10) %>%
@@ -460,10 +475,20 @@ fit %>%
 aus_holidays <- tourism %>%
   filter(Purpose == "Holiday") %>%
   summarise(Trips = sum(Trips)/1e3)
+# - eda
+autoplot(aus_holidays, Trips) +
+  labs(title = "Australian Trips")
+aus_holidays %>% ACF(y = Trips) %>% autoplot()
+aus_holidays %>%
+  model(stl = STL(Trips)) %>% 
+  components() %>% 
+  autoplot()
 # - model
 fit <- aus_holidays %>%
   model(additive = ETS(Trips ~ error("A") + trend("A") + season("A")),
-        multiplicative = ETS(Trips ~ error("M") + trend("A") + season("M")))
+        multiplicative = ETS(Trips ~ error("M") + trend("A") + season("M")),
+        additive_Damped = ETS(Trips ~ error("A") + trend("Ad") + season("A")),
+        multiplicative_Damped = ETS(Trips ~ error("M") + trend("Ad") + season("M")))
 fit %>% glance()
 fit %>% tidy()
 fit %>% augment()
@@ -482,12 +507,24 @@ sth_cross_ped <- pedestrian %>%
          Sensor == "Southern Cross Station") %>%
   index_by(Date) %>%
   summarise(Count = sum(Count)/1000)
+
+sth_cross_ped %>% autoplot(Count)
+sth_cross_ped %>% ACF(y = Count) %>% autoplot()
 sth_cross_ped %>%
+  model(stl = STL(Count)) %>% 
+  components() %>% 
+  autoplot()
+
+fit <- sth_cross_ped %>%
   filter(Date <= "2016-07-31") %>%
-  model(
-    hw = ETS(Count ~ error("M") + trend("Ad") + season("M"))
-  ) %>%
-  forecast(h = "2 weeks") %>%
+  model(hw = ETS(Count ~ error("M") + trend("Ad") + season("M")))
+fit %>% glance()
+fit %>% tidy()
+fit %>% augment()
+fit %>% components()
+
+fc <- fit %>% forecast(h = "2 weeks") 
+fc %>% 
   autoplot(sth_cross_ped %>% filter(Date <= "2016-08-14")) +
   labs(title = "Daily traffic: Southern Cross",
        y="Pedestrians ('000)")
@@ -497,71 +534,94 @@ sth_cross_ped %>%
 # Chapter 9: ARIMA Models ----
 
 # Stationarity & Differencing
-google_2015 %>%
-  mutate(diff_close = difference(Close)) %>%
-  features(diff_close, ljung_box, lag = 10)
-
-PBS %>%
-  filter(ATC2 == "H02") %>%
-  summarise(Cost = sum(Cost)/1e6) %>%
-  transmute(
-    `Sales ($million)` = Cost,
-    `Log sales` = log(Cost),
-    `Annual change in log sales` = difference(log(Cost), 12),
-    `Doubly differenced log sales` =
-      difference(difference(log(Cost), 12), 1)
-  ) %>%
-  pivot_longer(-Month, names_to="Type", values_to="Sales") %>%
-  mutate(
-    Type = factor(Type, levels = c(
-      "Sales ($million)",
-      "Log sales",
-      "Annual change in log sales",
-      "Doubly differenced log sales"))
-  ) %>%
-  ggplot(aes(x = Month, y = Sales)) +
-  geom_line() +
-  facet_grid(vars(Type), scales = "free_y") +
-  labs(title = "Corticosteroid drug sales", y = NULL)
-
-# - unit test
-google_2015 %>% features(Close, unitroot_kpss)
-google_2015 %>%
-  mutate(diff_close = difference(Close)) %>%
-  features(diff_close, unitroot_kpss)
-# - determines the number of 1st differences to use
-google_2015 %>% features(Close, unitroot_ndiffs)
-# - determine the appropriate number of seasonal differences to use
-aus_total_retail <- aus_retail %>%
-  summarise(Turnover = sum(Turnover))
-aus_total_retail %>%
-  mutate(log_turnover = log(Turnover)) %>%
-  features(log_turnover, unitroot_nsdiffs)
-aus_total_retail %>%
-  mutate(log_turnover = difference(log(Turnover), 12)) %>%
-  features(log_turnover, unitroot_ndiffs)
 
 # ARIMA
 # - data
-global_economy %>%
-  filter(Code == "EGY") %>%
+egy_economy <- global_economy %>%
+  filter(Code == "EGY")
+# - eda
+egy_economy %>% 
   autoplot(Exports) +
   labs(y = "% of GDP", title = "Egyptian Exports")
+egy_economy %>% gg_tsdisplay(plot_type = "partial")
+egy_economy %>% ACF(Exports) %>% autoplot()
+egy_economy %>% PACF(Exports) %>% autoplot()
+egy_economy %>% features(Exports, unitroot_kpss)
+egy_economy %>% features(Exports, unitroot_ndiffs)
+egy_economy %>% 
+  mutate(diff_close = difference(Exports)) %>% 
+  features(diff_close, ljung_box, lag = 10)
 # - model
-fit <- global_economy %>%
-  filter(Code == "EGY") %>%
-  model(ARIMA(Exports))
+fit <- egy_economy %>% model(ARIMA(Exports))
 fit %>% report()
+fit %>% glance()
+fit %>% tidy()
+fit %>% augment()
+
+fit2 <- egy_economy %>% model(ARIMA(Exports ~ pdq(4,0,0)))
+fit2 %>% report()
 # - forecast
-fit %>% forecast(h=10) %>%
+fit %>% 
+  forecast(h=10) %>%
   autoplot(global_economy) +
   labs(y = "% of GDP", title = "Egyptian Exports")
-# - ACF & PACF
-global_economy %>%
-  filter(Code == "EGY") %>%
-  ACF(Exports) %>%
-  autoplot()
-global_economy %>%
-  filter(Code == "EGY") %>%
-  PACF(Exports) %>%
-  autoplot()
+fit2 %>% 
+  forecast(h=10) %>%
+  autoplot(global_economy) +
+  labs(y = "% of GDP", title = "Egyptian Exports")
+
+
+# - data
+caf_economy <- global_economy %>%
+  filter(Code == "CAF")
+# - eda
+caf_economy %>% 
+  autoplot(Exports) +
+  labs(title="Central African Republic exports", y="% of GDP")
+caf_economy %>% features(Exports, unitroot_kpss)
+caf_economy %>% features(Exports, unitroot_ndiffs)
+caf_economy %>% gg_tsdisplay(difference(Exports), plot_type='partial') # ACF: MA(3) | PACF: AR(2)
+# - fit
+fit <- caf_economy %>% 
+  model(arima210 = ARIMA(Exports ~ pdq(2,1,0)),
+        arima013 = ARIMA(Exports ~ pdq(0,1,3)),
+        stepwise = ARIMA(Exports),
+        search = ARIMA(Exports, stepwise=FALSE))
+fit %>% report()
+fit %>% tidy()
+fit %>% pivot_longer(!Country, names_to = "Model name",
+                     values_to = "Orders")
+fit %>% glance() %>% arrange(AICc) %>% select(.model:BIC)
+# - diagnostic
+fit %>%
+  select(search) %>% 
+  gg_tsresiduals()
+fit %>% 
+  augment() %>%
+  filter(.model=='search') %>%
+  features(.innov, ljung_box, lag = 10, dof = 3)
+# - forecast
+fit %>%
+  forecast(h=5) %>%
+  filter(.model=='search') %>%
+  autoplot(global_economy)
+
+# Seasonal ARIMA
+# - data
+leisure <- us_employment %>%
+  filter(Title == "Leisure and Hospitality",
+         year(Month) > 2000) %>%
+  mutate(Employed = Employed/1000) %>%
+  select(Month, Employed)
+# - eda
+leisure %>% 
+  autoplot(Employed) +
+  labs(title = "US employment: leisure and hospitality",
+       y="Number of people (millions)")
+
+leisure %>% features(Employed, unitroot_kpss)
+leisure %>% features(Employed, unitroot_ndiffs)
+leisure %>%
+  gg_tsdisplay(difference(Employed, 12),
+               plot_type='partial', lag=36) +
+  labs(title="Seasonally differenced", y="")

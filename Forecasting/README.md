@@ -116,16 +116,26 @@ _Disadvantages_
 # Exponential Smoothing
 
 <img src="Images/Expo_Sum.PNG" width="600">
+<img src="Images/Expo_Sum_Form.PNG" width="600">
 
 ## Simple Exponential Smoothing
 > suitable for forecasting data with no clear trend or seasonal pattern. Similar to Moving Average, however gives more weight to recent observations.
 
-<img src="Images/SES.PNG" width="300">
+<img src="Images/SES.PNG" width="500">
 
 _Forecasts are calculated using weighted averages, where the weights decrease exponentially as observations come from further in the past — the smallest weights are associated with the oldest observations_
 - If α is small (i.e., close to 0), more weight is given to observations from the more distant past.
 - If α is large (i.e., close to 1), more weight is given to the more recent observations.
 - For the extreme case where α = 1, yT+1|T=yT, and the forecasts are equal to the naïve forecasts.
+
+**Weighted Average Form**
+
+<img src="Images/SES_Weighted.PNG" width="300"> \
+<img src="Images/SES_Weighted2.PNG" width="300">
+
+**Component Form**
+
+<img src="Images/SES_Component.PNG" width="300">
 
 **_OPTIMIZATION_**
 
@@ -152,6 +162,8 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 
 ## Holt-Winters
 
+<img src="Images/HW.PNG" width="500">
+
 ### Additive Method
 > preferred when the seasonal variations are roughly constant through the series,
 
@@ -170,9 +182,21 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 ### Damped
 <img src="Images/HW_Damped.PNG" width="500">
 
-# ARIMA Models
+## ETS Models
+<img src="Images/ETS.PNG" width="500">
+<img src="Images/ETS_Algo.PNG" width="500">
 
+# ARIMA Models
 <img src="Images/Models.PNG" width="800">
+
+## Stationarity
+<img src="Images/Stationarity.PNG" width="600">
+<img src="Images/UnitRoot.PNG" width="600">
+
+**Differencing:** helps stabilize the mean  
+**Logarithms:** helps stabilize the variance
+
+<img src="Images/ARIMA.PNG" width="600">
 
 # Regression Models
 
