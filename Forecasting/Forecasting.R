@@ -367,6 +367,127 @@ beer_fc %>%
 
 # Chapter 6: Judgemental Forecasts ----
 # Chapter 7: Regression Models ----
+
+# Simple Linear Regression
+# - data
+us_change
+# - eda
+us_change %>%
+  pivot_longer(c(Consumption, Income), names_to="Series") %>%
+  autoplot(value) +
+  labs(y = "% change")
+us_change %>%
+  ggplot(aes(x = Income, y = Consumption)) +
+  labs(y = "Consumption (quarterly % change)",
+       x = "Income (quarterly % change)") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+# - fit
+fit <- us_change %>% model(TSLM(Consumption ~ Income))
+fit %>% report()
+
+# Multiple Linear Regression
+# - eda
+us_change %>% 
+  pivot_longer(c(Production,Savings,Unemployment), names_to="Series") %>% 
+  ggplot(aes(Quarter, value)) +
+  geom_line(aes(color = Series)) +
+  facet_wrap(~Series, ncol = 1, scales = "free_y")
+us_change %>% 
+  GGally::ggpairs(columns = 2:6)
+# - fit
+fit <- us_change %>% model(tslm = TSLM(Consumption ~ Income + Production + Unemployment + Savings))
+fit %>% report()
+# - diagnostics
+fit %>% 
+  augment() %>%
+  ggplot(aes(x = Quarter)) +
+  geom_line(aes(y = Consumption, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  labs(y = NULL, title = "Percent change in US consumption expenditure") +
+  scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
+  guides(colour = guide_legend(title = NULL))
+fit %>% 
+  augment() %>%
+  ggplot(aes(x = Consumption, y = .fitted)) +
+  geom_point() +
+  labs(
+    y = "Fitted (predicted values)",
+    x = "Data (actual values)",
+    title = "Percent change in US consumption expenditure"
+  ) +
+  geom_abline(intercept = 0, slope = 1)
+fit %>% gg_tsresiduals()
+fit %>% 
+  augment() %>%
+  features(.innov, ljung_box, lag = 10, dof = 5)
+us_change %>%
+  left_join(residuals(fit), by = "Quarter") %>%
+  pivot_longer(Income:Unemployment,
+               names_to = "regressor", values_to = "x") %>%
+  ggplot(aes(x = x, y = .resid)) +
+  geom_point() +
+  facet_wrap(. ~ regressor, scales = "free_x") +
+  labs(y = "Residuals", x = "")
+augment(fit) %>%
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point() + labs(x = "Fitted", y = "Residuals")
+
+
+# Australian quarterly beer production
+# - data
+recent_production <- aus_production %>%
+  filter(year(Quarter) >= 1992)
+# - eda
+recent_production %>%
+  autoplot(Beer) +
+  labs(y = "Megalitres",
+       title = "Australian quarterly beer production")
+# - fit
+fit <- recent_production %>% model(TSLM(Beer ~ trend() + season()))
+fit %>% report()
+fit %>% 
+  augment() %>%
+  ggplot(aes(x = Quarter)) +
+  geom_line(aes(y = Beer, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  scale_colour_manual(
+    values = c(Data = "black", Fitted = "#D55E00")
+  ) +
+  labs(y = "Megalitres",
+       title = "Australian quarterly beer production") +
+  guides(colour = guide_legend(title = "Series"))
+fit %>% 
+  augment() %>%
+  ggplot(aes(x = Beer, y = .fitted,
+             colour = factor(quarter(Quarter)))) +
+  geom_point() +
+  labs(y = "Fitted", x = "Actual values",
+       title = "Australian quarterly beer production") +
+  geom_abline(intercept = 0, slope = 1) +
+  guides(colour = guide_legend(title = "Quarter"))
+
+fit2 <- us_change %>% model(lm = TSLM(Consumption ~ Income + Savings + Unemployment))
+
+# - forecast
+fc <- forecast(fit)
+fc %>%
+  autoplot(recent_production) +
+  labs(title = "Forecasts of beer production using regression", y = "megalitres")
+
+future_scenarios <- scenarios(
+  Increase = new_data(us_change, 4) %>%
+    mutate(Income=1, Savings=0.5, Unemployment=0),
+  Decrease = new_data(us_change, 4) %>%
+    mutate(Income=-1, Savings=-0.5, Unemployment=0),
+  names_to = "Scenario")
+
+fc2 <- forecast(fit2, new_data = future_scenarios)
+us_change %>%
+  autoplot(Consumption) +
+  autolayer(fc2) +
+  labs(title = "US consumption", y = "% change")
+#
 # Chapter 8: Exponential Smoothing ----
 
 # Simple Exponential Smoothing
@@ -625,3 +746,146 @@ leisure %>%
   gg_tsdisplay(difference(Employed, 12),
                plot_type='partial', lag=36) +
   labs(title="Seasonally differenced", y="")
+leisure %>%
+  gg_tsdisplay(difference(Employed, 12) %>% difference(),
+               plot_type='partial', lag=36) +
+  labs(title = "Double differenced", y="")
+# - fit
+fit <- leisure %>%
+  model(
+    arima012011 = ARIMA(Employed ~ pdq(0,1,2) + PDQ(0,1,1)),
+    arima210011 = ARIMA(Employed ~ pdq(2,1,0) + PDQ(0,1,1)),
+    auto = ARIMA(Employed, stepwise = FALSE, approx = FALSE)
+  )
+fit %>% pivot_longer(everything(), names_to = "Model name",
+                     values_to = "Orders")
+fit %>% glance() %>% arrange(AICc) %>% select(.model:BIC)
+# - diagnostics
+fit %>% select(auto) %>% gg_tsresiduals(lag=36)
+fit %>% augment() %>% features(.innov, ljung_box, lag=24, dof=4)
+# - forecast
+fit %>% 
+  forecast(h=36) %>%
+  filter(.model=='auto') %>%
+  autoplot(leisure) +
+  labs(title = "US employment: leisure and hospitality",
+       y="Number of people (millions)")
+
+# Chapter 10: Dynamic Regression Models ----
+# - eda
+us_change %>%
+  pivot_longer(c(Consumption, Income),
+               names_to = "var", values_to = "value") %>%
+  ggplot(aes(x = Quarter, y = value)) +
+  geom_line(aes(color = var), show.legend = FALSE) +
+  facet_grid(vars(var), scales = "free_y") +
+  labs(title = "US consumption and personal income",
+       y = "Quarterly % change")
+# - model
+fit <- us_change %>% model(ARIMA(Consumption ~ Income))
+fit %>% report()
+# - diagnostics
+bind_rows(`Regression residuals` = as_tibble(residuals(fit, type = "regression")),
+          `ARIMA residuals` = as_tibble(residuals(fit, type = "innovation")), # ARIMA residuals
+          .id = "type") %>%
+  mutate(type = factor(type, levels=c("Regression residuals", "ARIMA residuals"))) %>%
+  ggplot(aes(x = Quarter, y = .resid)) +
+  geom_line() +
+  facet_grid(vars(type))
+
+fit %>% gg_tsresiduals()
+fit %>% # H0: White Noise 
+  augment() %>% 
+  features(.innov, ljung_box, dof = 5, lag = 8)
+# - forecasting
+us_change_future <- 
+  us_change %>%  
+  new_data(8) %>%
+  mutate(Income = mean(us_change$Income))
+fit %>% 
+  forecast(new_data = us_change_future) %>%
+  autoplot(us_change) +
+  labs(y = "Percentage change")
+
+# Electiricity Demand
+# - data 
+vic_elec_daily <- vic_elec %>%
+  filter(year(Time) == 2014) %>%
+  index_by(Date = date(Time)) %>%
+  summarise(
+    Demand = sum(Demand) / 1e3,
+    Temperature = max(Temperature),
+    Holiday = any(Holiday)
+  ) %>%
+  mutate(Day_Type = case_when(
+    Holiday ~ "Holiday",
+    wday(Date) %in% 2:6 ~ "Weekday",
+    TRUE ~ "Weekend"
+  ))
+# - eda
+vic_elec_daily %>%
+  ggplot(aes(x = Temperature, y = Demand, colour = Day_Type)) +
+  geom_point() +
+  labs(y = "Electricity demand (GW)",
+       x = "Maximum daily temperature")
+vic_elec_daily %>%
+  pivot_longer(c(Demand, Temperature)) %>%
+  ggplot(aes(x = Date, y = value)) +
+  geom_line() +
+  facet_grid(name ~ ., scales = "free_y") + 
+  ylab("")
+# - fit
+fit <- vic_elec_daily %>%
+  model(ARIMA(Demand ~ Temperature + I(Temperature^2) +
+                (Day_Type == "Weekday")))
+fit %>% report()
+# - diagnostics
+fit %>% gg_tsresiduals()
+fit %>% 
+  augment() %>%
+  features(.innov, ljung_box, dof = 9, lag = 14)
+# - forecast
+vic_elec_future <- 
+  new_data(vic_elec_daily, 14) %>%
+  mutate(
+    Temperature = 26,
+    Holiday = c(TRUE, rep(FALSE, 13)),
+    Day_Type = case_when(
+      Holiday ~ "Holiday",
+      wday(Date) %in% 2:6 ~ "Weekday",
+      TRUE ~ "Weekend"
+    )
+  )
+fit %>% 
+  forecast(vic_elec_future) %>%
+  autoplot(vic_elec_daily) +
+  labs(title="Daily electricity demand: Victoria",
+       y="GW")
+
+# Air Passengers'
+# - data
+aus_airpassengers
+# - eda 
+aus_airpassengers %>%
+  autoplot(Passengers) +
+  labs(y = "Passengers (millions)",
+       title = "Total annual air passengers")
+# - model
+fit_deterministic <- 
+  aus_airpassengers %>%
+  model(deterministic = ARIMA(Passengers ~ 1 + trend() + pdq(d = 0)))
+fit_stochastic <- 
+  aus_airpassengers %>%
+  model(stochastic = ARIMA(Passengers ~ pdq(d = 1)))
+
+fit_deterministic %>% report()
+fit_stochastic %>% report()
+# - forecast
+aus_airpassengers %>%
+  autoplot(Passengers) +
+  autolayer(fit_stochastic %>% forecast(h = 20),
+            colour = "#0072B2", level = 95) +
+  autolayer(fit_deterministic %>% forecast(h = 20),
+            colour = "#D55E00", alpha = 0.65, level = 95) +
+  labs(y = "Air passengers (millions)",
+       title = "Forecasts from trend models")

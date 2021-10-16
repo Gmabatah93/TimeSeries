@@ -1,4 +1,5 @@
 [reference](https://otexts.com/fpp3/index.html)
+[reference](https://www.youtube.com/watch?v=F2ByLxVlCtM&list=PLDD7yyOAeWWc-CBJuXcF6WRa2dhLwiHC0&index=23&ab_channel=EdwardMalthouse)
 > predicting the future as accurately as possible, given all of the information available, including historical data and knowledge of any future events that might impact the forecasts.
 
 The predictability of an event or a quantity depends on several factors including:
@@ -198,8 +199,83 @@ _Forecasts are calculated using weighted averages, where the weights decrease ex
 
 <img src="Images/ARIMA.PNG" width="600">
 
+## AutoRegressive Models
+<img src="Images/AutoR.PNG" width="600">
+<img src="Images/AutoR_Stats.PNG" width="600">
+<img src="Images/AR2.PNG" width="600">
+
+## Moving Average Models
+<img src="Images/MA.PNG" width="600">
+
+_Note: A moving average model is used for forecasting future values, while moving average smoothing is used for estimating the trend-cycle of past values._
+
+## ARMA
+<img src="Images/ARMA.PNG" width="600">
+
+## ARIMA
+<img src="Images/ARIMA_Form.PNG" width="600">
+<img src="Images/ARIMA.PNG" width="600">
+<img src="Images/ARIMA_Params.PNG" width="600">
+<img src="Images/ARIMA_Models.PNG" width="600">
+
+## Seasonal
+<img src="Images/ARIMA_Seasonal.PNG" width="600">
+
+## Flow-Chart
+<img src="Images/ARIMA_Flowchart.PNG" width="600">
+
+## ETS vs ARIMA
+<img src="Images/ETSvARIMA.PNG" width="600">
+<img src="Images/ETSvARIMA2.PNG" width="600">
+
 # Regression Models
 
+<img src="Images/Metrics.PNG" width="500">
+
+## Assumptions
+- _model is a reasonable approximation to reality; that is, the relationship between the forecast variable and the predictor variables satisfies this linear equation._
 <img src="Images/Resids_Assumptions.PNG" width="500">
 
-<img src="Images/Metrics.PNG" width="500">
+## Least Squares Estimation
+
+<img src="Images/LeastSquares.PNG" width="500">
+
+## Evaluation
+
+### Goodness-of-Fit
+<img src="Images/GOF.PNG" width="400">
+
+### Residuals
+<img src="Images/Resids.PNG" width="400">
+<img src="Images/Resids2.PNG" width="400">
+
+### Plot: ACF
+### Plot: Residual against predictors
+### Plot: Residual against fitted values
+### Plot: Outliers and Influential Observations
+
+## Selecting Predictors
+### Adjusted R2
+<img src="Images/AdjR.PNG" width="400">
+
+- **T:** the number of observations and **k** is the number of predictors
+
+### Cross-Validation
+<img src="Images/CV.PNG" width="400">
+
+### Akaike’s Information Criterion
+ <img src="Images/AIC.PNG" width="400">
+
+- _The idea here is to penalise the fit of the model (SSE) with the number of parameters that need to be estimated._
+- _The model with the minimum value of the AIC is often the best model for forecasting. For large values of T, minimising the AIC is equivalent to minimising the CV value._
+
+### Bayesian Information Criterion
+<img src="Images/BIC.PNG" width="400">
+
+### Best Subset Regression
+### Stepwise Regression
+
+# Dynamic Regression Models
+<img src="Images/Dynamic.PNG" width="500">
+<img src="Images/Dynamic_Model.PNG" width="500">
+<img src="Images/Dynamic_Model2.PNG" width="500">
