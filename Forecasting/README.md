@@ -279,3 +279,7 @@ _Note: A moving average model is used for forecasting future values, while movin
 <img src="Images/Dynamic.PNG" width="500">
 <img src="Images/Dynamic_Model.PNG" width="500">
 <img src="Images/Dynamic_Model2.PNG" width="500">
+
+## Distributed Lags
+<img src="Images/Lag.PNG" width="500">
+<img src="Images/Lag2.PNG" width="500">

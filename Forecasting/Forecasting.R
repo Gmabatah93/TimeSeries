@@ -2,20 +2,42 @@ library(fpp3)
 theme_set(theme_minimal())
 
 #
-# Chapter 2: Time Series Graphics ----
-
-# tsibble() Objects
-x_year <- tsibble(Year = 2015:2019,
-                  Observation = c(123, 39, 78, 52, 110),
-                  index = Year)
-x_month <- tsibble(Month = c("2019 Jan","2019 Feb","2019 Mar","2019 Apr","2019 May") %>% yearmonth(),
-                   Observation = c(50,23,34,30,25),
-                   index = Month)
-
+# Prision ----
+# data
+prison <- readr::read_csv("https://OTexts.com/fpp3/extrafiles/prison_population.csv")
+prison <- prison %>%
+  mutate(Quarter = yearquarter(Date)) %>%
+  select(-Date) %>%
+  as_tsibble(key = c(State, Gender, Legal, Indigenous),
+             index = Quarter)
+# Olympic Running: ----
+# data
 olympic_running
+# eda
+olympic_running %>% distinct(Length)
 olympic_running %>% distinct(Sex)
 
+# Ansett Airlines ----
+# data
+ansett
+melsyd_economy <- ansett %>%
+  filter(Airports == "MEL-SYD", Class == "Economy") %>%
+  mutate(Passengers = Passengers/1000)
+# eda: time plot
+melsyd_economy %>%  
+  autoplot(Passengers) +
+  labs(title = "Ansett airlines economy class",
+       subtitle = "Melbourne-Sydney",
+       y = "Passengers ('000)")
+
+
+#
+# Pharmaceutical Benefit Scheme ----
+# data 
 PBS
+# eda
+PBS %>% distinct(Concession)
+PBS %>% distinct(Type)
 PBS %>% 
   filter(ATC2 == "A10") %>% 
   select(Month, Concession, Type, Cost)
@@ -25,79 +47,69 @@ PBS_a10 <- PBS %>%
   summarise(TotalC = sum(Cost)) %>%
   mutate(Cost = TotalC/1e6)
 
-prison <- readr::read_csv("https://OTexts.com/fpp3/extrafiles/prison_population.csv")
-prison <- prison %>%
-  mutate(Quarter = yearquarter(Date)) %>%
-  select(-Date) %>%
-  as_tsibble(key = c(State, Gender, Legal, Indigenous),
-             index = Quarter)
-
-# Time Plots
-melsyd_economy <- ansett %>%
-  filter(Airports == "MEL-SYD", Class == "Economy") %>%
-  mutate(Passengers = Passengers/1000) %>% 
-  autoplot(Passengers) +
-  labs(title = "Ansett airlines economy class",
-       subtitle = "Melbourne-Sydney",
-       y = "Passengers ('000)")
-
-autoplot(PBS_a10, Cost) +
+# data: Anatomical Therapeutic Chemical (a10)
+PBS_a10
+# eda: 
+# - time plot
+PBS_a10 %>% 
+  autoplot(Cost) +
   labs(y = "$ (millions)",
-       title = "Australian antidiabetic drug sales")
-
-# Seasonal Plots
+       title = "Australian antidiabetic drug sales",
+       subtitle = "a10")
+# - seasonal plot
 PBS_a10 %>%
   gg_season(Cost, labels = "both") +
   labs(y = "$ (millions)",
        title = "Seasonal plot: Antidiabetic drug sales") +
   expand_limits(x = ymd(c("1972-12-28", "1973-12-04")))
-
-vic_elec %>%
-  gg_season(Demand, period = "day") +
-  theme(legend.position = "none") +
-  labs(y="MW", title="Electricity demand: Victoria")
-vic_elec %>%
-  gg_season(Demand, period = "week") +
-  theme(legend.position = "none") +
-  labs(y="MW", title="Electricity demand: Victoria")
-vic_elec %>%
-  gg_season(Demand, period = "year") +
-  labs(y="MW", title="Electricity demand: Victoria")
-
-# Seasonal Subseries Plots
+# - seasonal subseries plot
 PBS_a10 %>%
   gg_subseries(Cost) +
   labs(y = "$ (millions)",
        title = "Australian antidiabetic drug sales")
+# - lag
+PBS_a10 %>% gg_lag(Cost, geom = "point") +
+  labs(x = "lag(Beer, k)")
+# - acf
+PBS_a10 %>% ACF(Cost, lag_max = 48) %>% autoplot() +
+  labs(title="Australian antidiabetic drug sales")
 
-holidays <- tourism %>%
-  filter(Purpose == "Holiday") %>%
-  group_by(State) %>%
-  summarise(Trips = sum(Trips)) 
-holidays %>%   
-  autoplot(Trips) +
-  labs(y = "Overnight trips ('000)",
-       title = "Australian domestic holidays")
-holidays %>% 
-  gg_season(Trips) +
-  labs(y = "Overnight trips ('000)",
-       title = "Australian domestic holidays")
-holidays %>%
-  gg_subseries(Trips) +
-  labs(y = "Overnight trips ('000)",
-       title = "Australian domestic holidays")
 
-# Scatter Plots
+#
+# Victoria (electricity demand) ----
+# data: 
+vic_elec
+# eda: 
+# - time plot
+vic_elec %>% 
+  autoplot()
+# - time plot: (2014) 
 vic_elec %>%
   filter(year(Time) == 2014) %>%
   autoplot(Demand) +
   labs(y = "GW",
        title = "Half-hourly electricity demand: Victoria")
+# - time plot: Temperature (2014)
 vic_elec %>%
   filter(year(Time) == 2014) %>%
   autoplot(Temperature) +
   labs(y = "Degrees Celsius",
        title = "Half-hourly temperatures: Melbourne, Australia")
+# - seasonal plot (Daily)
+vic_elec %>%
+  gg_season(Demand, period = "day") +
+  theme(legend.position = "none") +
+  labs(y="MW", title="Electricity demand: Victoria")
+# - seasonal plot (Weekly)
+vic_elec %>%
+  gg_season(Demand, period = "week") +
+  theme(legend.position = "none") +
+  labs(y="MW", title="Electricity demand: Victoria")
+# - seasonal plot (Yearly)
+vic_elec %>%
+  gg_season(Demand, period = "year") +
+  labs(y="MW", title="Electricity demand: Victoria")
+# - scatter plot
 vic_elec %>%
   filter(year(Time) == 2014) %>%
   ggplot(aes(x = Temperature, y = Demand)) +
@@ -105,108 +117,83 @@ vic_elec %>%
   labs(x = "Temperature (degrees Celsius)",
        y = "Electricity demand (GW)")
 
+
+#
+# Australian Holiday Tourism ----
+# data
+holidays <- tourism %>%
+  filter(Purpose == "Holiday") %>%
+  group_by(State) %>%
+  summarise(Trips = sum(Trips)) 
 visitors <- tourism %>%
   group_by(State) %>%
   summarise(Trips = sum(Trips))
+# eda
+# - time plot
+holidays %>%   
+  autoplot(Trips) +
+  labs(y = "Overnight trips ('000)",
+       title = "Australian domestic holidays")
+# - seasonal plot (Yearly)
+holidays %>% 
+  gg_season(Trips, period = "year") +
+  labs(y = "Overnight trips ('000)",
+       title = "Australian domestic holidays")
+# - seasonal subseries plot
+holidays %>%
+  gg_subseries(Trips) +
+  labs(y = "Overnight trips ('000)",
+       title = "Australian domestic holidays")
+# - time plot:
 visitors %>%
   ggplot(aes(x = Quarter, y = Trips)) +
   geom_line() +
   facet_grid(vars(State), scales = "free_y") +
   labs(title = "Australian domestic tourism",
        y= "Overnight trips ('000)")
+# - scatter plot matrix
 visitors %>%
   pivot_wider(values_from=Trips, names_from=State) %>%
   GGally::ggpairs(columns = 2:9)
 
-# Lag Plots
+
+#
+# Australian Beer Production ----
+# data
 recent_production <- aus_production %>%
   filter(year(Quarter) >= 2000)
-recent_production %>%
-  gg_lag(Beer, geom = "point") +
+# eda
+# - time plot
+recent_production %>% autoplot(Beer)
+# - seasonal plot
+recent_production %>% gg_season(Beer, period = "year") 
+# - lag plot
+recent_production %>% gg_lag(Beer, geom = "point") +
   labs(x = "lag(Beer, k)")
-
-# Autocorrelation
+# - acf
 recent_production %>% ACF(Beer, lag_max = 9)
-recent_production %>%
-  ACF(Beer) %>%
-  autoplot() + labs(title="Australian beer production")
+recent_production %>% ACF(Beer) %>% autoplot() + 
+  labs(title="Australian beer production")
 
-PBS_a10 %>%
-  ACF(Cost, lag_max = 48) %>%
-  autoplot() +
-  labs(title="Australian antidiabetic drug sales")
 
-# White Noise
-set.seed(30)
-y <- tsibble(sample = 1:50, wn = rnorm(50), index = sample)
-y %>% autoplot(wn) + labs(title = "White noise", y = "")
-y %>%
-  ACF(wn) %>%
-  autoplot() + labs(title = "White noise")
-
-# Chapter 3: Time Series Decomposition ----
-
-# Population Adjustments
-global_economy %>%
-  filter(Country == "Australia") %>%
-  autoplot(GDP/Population) +
-  labs(title= "GDP per capita", y = "$US")
-
-# Inflation Adjustments
-print_retail <- aus_retail %>%
-  filter(Industry == "Newspaper and book retailing") %>%
-  group_by(Industry) %>%
-  index_by(Year = year(Month)) %>%
-  summarise(Turnover = sum(Turnover))
+#
+# Global Economy ----
+# data
+global_economy
+# - filter: Austrialian Economy
 aus_economy <- global_economy %>%
   filter(Code == "AUS")
-print_retail %>%
-  left_join(aus_economy, by = "Year") %>%
-  mutate(Adjusted_turnover = Turnover / CPI * 100) %>%
-  pivot_longer(c(Turnover, Adjusted_turnover),
-               values_to = "Turnover") %>%
-  mutate(name = factor(name,
-                       levels=c("Turnover","Adjusted_turnover"))) %>%
-  ggplot(aes(x = Year, y = Turnover)) +
-  geom_line() +
-  facet_grid(name ~ ., scales = "free_y") +
-  labs(title = "Turnover: Australian print media industry",
-       y = "$AU")
-
-# Time Series Components
-us_retail_employment <- us_employment %>%
-  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
-  select(-Series_ID)
-us_retail_employment %>% 
-  autoplot(Employed) +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail")
-dcmp <- us_retail_employment %>%
-  model(stl = STL(Employed))
-dcmp %>% components()
-
-dcmp %>% components() %>% autoplot()
-dcmp %>% components() %>%
-  as_tsibble() %>%
-  autoplot(Employed, colour="gray") +
-  geom_line(aes(y=trend), colour = "#D55E00") +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail")
-dcmp %>% 
-  components() %>%
-  as_tsibble() %>%
-  autoplot(Employed, colour = "gray") +
-  geom_line(aes(y=season_adjust), colour = "#0072B2") +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail")
-
-# Moving Averages
-global_economy %>%
-  filter(Country == "Australia") %>%
-  autoplot(Exports) +
-  labs(y = "% of GDP", title = "Total Australian exports")
-aus_exports <- global_economy %>%
-  filter(Country == "Australia") %>%
+# eda
+# - time plot
+aus_economy %>% 
+  autoplot(GDP) +
+  labs(title= "GDP", y = "$US")
+# - time plot (population adjusted)
+aus_economy %>%
+  autoplot(GDP/Population) +
+  labs(title= "GDP per capita", y = "$US")
+# - moving average
+aus_exports <- aus_economy %>%
   mutate(`3-MA` = slider::slide_dbl(Exports, mean,
                                     .before = 1, 
                                     .after = 1, 
@@ -235,46 +222,91 @@ aus_exports %>%
        subtitle = "5-MA") +
   guides(colour = guide_legend(title = "series"))
 
-# Estimating the trend-cycle with seasonal data
-us_retail_employment_ma <- us_retail_employment %>%
-  mutate(
-    `12-MA` = slider::slide_dbl(Employed, mean,
-                                .before = 5, .after = 6, .complete = TRUE),
-    `2x12-MA` = slider::slide_dbl(`12-MA`, mean,
-                                  .before = 1, .after = 0, .complete = TRUE)
-  )
-us_retail_employment_ma %>%
-  autoplot(Employed, colour = "gray") +
-  geom_line(aes(y = `2x12-MA`), colour = "#D55E00") +
+
+#
+# Austrialian Retail ----
+# data
+aus_retail
+# - filter: News & Book
+print_retail <- aus_retail %>%
+  filter(Industry == "Newspaper and book retailing") 
+# - summarise: Turnover 
+print_retail <- print_retail %>% 
+  group_by(Industry) %>%
+  index_by(Year = year(Month)) %>%
+  summarise(Turnover = sum(Turnover))
+
+# eda
+# - time plot
+print_retail %>% autoplot(Turnover)
+# - time plot (Inflation Adjustment)
+print_retail %>%
+  left_join(aus_economy, by = "Year") %>%
+  mutate(Adjusted_turnover = Turnover / CPI * 100) %>%
+  pivot_longer(c(Turnover, Adjusted_turnover),
+               values_to = "Turnover") %>%
+  mutate(name = factor(name,
+                       levels=c("Turnover","Adjusted_turnover"))) %>%
+  ggplot(aes(x = Year, y = Turnover)) +
+  geom_line() +
+  facet_grid(name ~ ., scales = "free_y") +
+  labs(title = "Turnover: Australian print media industry",
+       y = "$AU")
+
+
+#
+# US Employment ----
+# data
+us_employment
+# - filter: Retail Trade
+us_retail_employment <- us_employment %>%
+  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
+  select(-Series_ID)
+
+# eda
+us_retail_employment %>% 
+  autoplot(Employed) +
   labs(y = "Persons (thousands)",
        title = "Total employment in US retail")
-
-# Additive Method
-us_retail_employment %>%
-  model(
-    classical_decomposition(Employed, type = "additive")
-  ) %>%
-  components() %>%
-  autoplot() +
+# - classical decomposition 
+us_retail_employment %>% model(classical_decomposition(Employed, type = "additive")) %>%
+  components() %>% autoplot() +
   labs(title = "Classical additive decomposition of total
                   US retail employment")
-
-# X-11 Method
+# - stl decomposition
+dcmp <- us_retail_employment %>% model(stl = STL(Employed))
+dcmp %>% components()
+dcmp %>% components() %>% as_tsibble() %>%
+  autoplot(Employed, colour="gray") +
+  geom_line(aes(y=trend), colour = "#D55E00") +
+  geom_line(aes(y=season_adjust), colour = "#0072B2") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+dcmp %>% components() %>% autoplot()
+# - X-11 decomposition
 x11_dcmp <- us_retail_employment %>%
   model(x11 = X_13ARIMA_SEATS(Employed ~ x11())) %>%
   components()
-x11_dcmp %>% 
-  autoplot() +
-  labs(title =
-         "Decomposition of total US retail employment using X-11.")
-
-# SEATS
+x11_dcmp %>%
+  ggplot(aes(x = Month)) +
+  geom_line(aes(y = Employed, colour = "Data")) +
+  geom_line(aes(y = season_adjust, colour = "Seasonally Adjusted")) +
+  geom_line(aes(y = trend, colour = "Trend")) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail") +
+  scale_colour_manual(
+    values = c("gray", "#0072B2", "#D55E00"),
+    breaks = c("Data", "Seasonally Adjusted", "Trend")
+  )
+x11_dcmp %>% autoplot() +
+  labs(title = "Decomposition of total US retail employment using X-11.")
+# - SEATS
 seats_dcmp <- us_retail_employment %>%
   model(seats = X_13ARIMA_SEATS(Employed ~ seats())) %>%
   components()
-autoplot(seats_dcmp) +
-  labs(title =
-         "Decomposition of total US retail employment using SEATS")
+seats_dcmp %>% 
+  autoplot() + 
+  labs(title = "Decomposition of total US retail employment using SEATS")
 
 # STL Decomposition
 us_retail_employment %>%
@@ -889,3 +921,39 @@ aus_airpassengers %>%
             colour = "#D55E00", alpha = 0.65, level = 95) +
   labs(y = "Air passengers (millions)",
        title = "Forecasts from trend models")
+
+# TV Advertising & Insurance
+# - data
+insurance
+# - eda
+insurance %>%
+  pivot_longer(Quotes:TVadverts) %>%
+  ggplot(aes(x = Month, y = value)) +
+  geom_line() +
+  facet_grid(vars(name), scales = "free_y") +
+  labs(y = "", title = "Insurance advertising and quotations")
+# - model
+fit <- insurance %>%
+  # Restrict data so models use same fitting period
+  mutate(Quotes = c(NA, NA, NA, Quotes[4:40])) %>%
+  # Estimate models
+  model(
+    lag0 = ARIMA(Quotes ~ pdq(d = 0) + TVadverts),
+    lag1 = ARIMA(Quotes ~ pdq(d = 0) + TVadverts + lag(TVadverts)),
+    lag2 = ARIMA(Quotes ~ pdq(d = 0) + TVadverts + lag(TVadverts) + lag(TVadverts, 2)),
+    lag3 = ARIMA(Quotes ~ pdq(d = 0) + TVadverts + lag(TVadverts) + lag(TVadverts, 2) + lag(TVadverts, 3))
+  )
+fit %>% glance() # choose optimal lag
+fit_best <- insurance %>% 
+  model(ARIMA(Quotes ~ pdq(d = 0) + TVadverts + lag(TVadverts)))
+fit_best %>% report()
+# - forecast
+insurance_future <- new_data(insurance, 20) %>%
+  mutate(TVadverts = 8)
+fit_best %>%
+  forecast(insurance_future) %>%
+  autoplot(insurance) +
+  labs(
+    y = "Quotes",
+    title = "Forecast quotes with future advertising set to 8"
+  )
