@@ -8,7 +8,7 @@ The predictability of an event or a quantity depends on several factors includin
 - how similar the future is to the past
 - whether the forecasts can affect the thing we are trying to forecast.
 
-**Short-term forecasts:** are needed for the scheduling of personnel, production and transportation. As part of the scheduling process, forecasts of demand are often also required.
+**Short-term forecasts:** are needed for the scheduling of personnel, production and transportat  ion. As part of the scheduling process, forecasts of demand are often also required.
 
 **Medium-term forecasts:** are needed to determine future resource requirements, in order to purchase raw materials, hire personnel, or buy machinery and equipment.
 
@@ -113,6 +113,19 @@ _Disadvantages_
 ## Residual Diagnostics
 > 1. Residuals are uncorrelated. If there are correlations between innovation residuals, then there is information left in the residuals which should be used in computing forecasts.
 > 2. Residuals have zero mean. If they have a mean other than zero, then the forecasts are biased.
+
+# Forecasting
+**Prediction Intervals**
+
+<img src="Images/PI.PNG" width="300">
+
+**One-Step Prediction Intervals**
+
+<img src="Images/PI_OneStep.PNG" width="300">
+
+**Benchmark Methods**
+
+<img src="Images/FC_Simple.PNG" width="500">
 
 # Exponential Smoothing
 
@@ -220,6 +233,11 @@ _Note: A moving average model is used for forecasting future values, while movin
 
 ## Seasonal
 <img src="Images/ARIMA_Seasonal.PNG" width="600">
+
+## Optimization
+Once the model order has been identified _(p,d,q)_ the parameters  **c,ϕ,θ** must be estimated using **_Maximum Likelihood Estimation_**
+
+Information Criterion can also be used
 
 ## Flow-Chart
 <img src="Images/ARIMA_Flowchart.PNG" width="600">

@@ -177,12 +177,43 @@ recent_production %>% ACF(Beer) %>% autoplot() +
 
 
 #
-# Global Economy ----
+# Global Economy (Sweden) ----
+
+# data
+global_economy
+# - Population Adjustment 
+gdppc <- global_economy %>% mutate(GDP_per_capita = GDP / Population)
+
+# eda 
+# - Sweden
+gdppc %>% 
+  filter(Country == "Sweden") %>% 
+  autoplot() +
+  labs(y = "$US", title = "GDP per capita for Sweden")
+
+# model
+fit <- gdppc %>% 
+  model(trend_model = TSLM(GDP_per_capita ~ trend()))
+
+# forecast
+# - All
+fit %>% forecast(h = 3)
+# - Sweden
+fit %>% forecast(h = 3) %>% 
+  filter(Country == "Sweden") %>% 
+  autoplot(gdppc) +
+  labs(y = "$US", title = "GDP per capita for Sweden")
+
+
+#
+# Global Economy (Australia) ----
 # data
 global_economy
 # - filter: Austrialian Economy
-aus_economy <- global_economy %>%
-  filter(Code == "AUS")
+aus_economy <- global_economy %>% filter(Code == "AUS")
+# - filter: (Population Adjusted)
+aus_economy_Adj <- aus_economy %>% mutate(Pop = Population/1e6)
+
 # eda
 # - time plot
 aus_economy %>% 
@@ -223,6 +254,299 @@ aus_exports %>%
   guides(colour = guide_legend(title = "series"))
 
 
+
+# eda
+# - plot: time plot
+aus_economy_Adj %>% 
+  autoplot(Pop) +
+  labs(y = "Millions", title = "Australian population")
+# - plot: ACF
+aus_economy_Adj %>% ACF(Pop) %>% autoplot()
+# - plot: stl dcmp
+aus_economy_Adj_dcmp <- aus_economy_Adj %>% model(stl = STL(Pop))
+aus_economy_Adj_dcmp %>% components() %>% autoplot()
+
+# model
+# - fit
+fit <- aus_economy_Adj %>%
+  model(Mean = MEAN(Pop),
+        Naive = NAIVE(Pop),
+        Drift = NAIVE(Pop ~ drift()),
+        SES = ETS(Pop ~ error("A") + trend("N") + season("N")),
+        Holt = ETS(Pop ~ error("A") + trend("A") + season("N")),
+        D_Holt = ETS(Pop ~ error("A") + trend("Ad", phi = 0.9) + season("N"))
+  )
+
+# diagnostics
+# - all
+fit %>% report()
+# - SES
+fit %>% select(SES) %>% report()
+# - Holt 
+fit %>% select(Holt) %>% report()
+# - Holt (damped)
+fit %>% select(D_Holt) %>% report()
+
+# forecast
+fit %>% forecast(h = 10) %>% 
+  autoplot(aus_economy_Adj, level = NULL)
+
+# metrics
+fit %>% forecast(h = 1) %>% accuracy(aus_economy_Adj)
+#
+# Global Economy (Algeria) ----
+
+# data 
+global_economy
+# - filter: Algeria
+algeria_economy <- global_economy %>% filter(Country == "Algeria")
+
+# eda
+# - plot: time plot
+algeria_economy %>% autoplot(Exports) +
+  labs(y = "% of GDP", title = "Exports: Algeria")
+# - plot: acf
+algeria_economy %>% ACF(Exports) %>% autoplot()
+# - plot: stl decomposition
+algeria_dcmp <- algeria_economy %>% model(stl = STL(Exports))
+algeria_dcmp %>% components()
+algeria_dcmp %>% components() %>% as_tsibble() %>%
+  autoplot(Exports, colour="gray") +
+  geom_line(aes(y=trend), colour = "#D55E00") +
+  geom_line(aes(y=season_adjust), colour = "#0072B2") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+algeria_dcmp %>% components() %>% autoplot()
+
+# model
+# - fit
+fit <- algeria_economy %>%
+  model(Mean = MEAN(Exports),
+        Naive = NAIVE(Exports),
+        Drift = NAIVE(Exports ~ drift()),
+        SES = ETS(Exports ~ error("A") + trend("N") + season("N"))
+  )
+
+# diagnostics
+# - all
+fit %>% report()
+# - SES
+fit %>% select(SES) %>% report()
+
+# forecast
+fit %>% forecast(h = 5) %>% 
+  autoplot(algeria_economy, level = NULL)
+
+#
+# Global Economy (Eygpt) ----
+
+# data
+global_economy
+# - filter: Eygpt
+egypt_economy <- global_economy %>% filter(Code == "EGY")
+
+# eda
+# - plot: time plot
+egypt_economy %>% 
+  autoplot(Exports) +
+  labs(y = "% of GDP", title = "Exports: Eygpt")
+# - plot: acf
+egypt_economy %>% ACF(Exports) %>% autoplot()
+egypt_economy %>% PACF(Exports) %>% autoplot() # last sig spike "4"
+# - plot: stl dcmp
+dcmp <- egypt_economy %>% model(stl = STL(Exports))
+dcmp %>% components() %>% autoplot()
+# - null: data is stationary
+egypt_economy %>% features(Exports, unitroot_kpss)
+
+# Model: Benchmark
+# - fit
+fit_benchmark <- egypt_economy %>%
+  model(Mean = MEAN(Exports),
+        Naive = NAIVE(Exports),
+        Drift = NAIVE(Exports ~ drift()))
+# - diagnostic
+fit_benchmark %>% glance()
+# - forecast
+fit_benchmark %>% forecast(h = 10) %>% autoplot(egypt_economy)
+fit_benchmark %>% forecast(h = 10) %>% accuracy(egypt_economy)
+
+# Model: Exponential Smoothig
+# - fit
+fit_exp <- egypt_economy %>% 
+  model(Holt = ETS(Exports ~ error("A") + trend("A") + season("N")))
+# - diagnostic
+fit_exp %>% report()
+# - forecast
+fit_exp %>% forecast(h = 5) %>% autoplot(egypt_economy)
+fit_exp %>% forecast(h = 5) %>% accuracy(egypt_economy)
+
+# Model: ARIMA 
+# - fit
+fit_arima <- egypt_economy %>% 
+  model(ARIMA(Exports))
+fit_arima_manual <- egypt_economy %>% 
+  model(ARIMA(Exports ~ pdq(4,0,0)))
+# - diagnostic
+fit_arima %>% report()
+fit_arima_manual %>% report()
+# - forecast
+fit_arima %>% forecast(h = 10) %>% autoplot(egypt_economy)
+
+#
+# Global Economy (Central African Republic) ----
+
+# data
+global_economy
+# - filter: CAF
+caf_economy <- global_economy %>% filter(Code == "CAF")
+
+# eda
+# - plot: time plot
+caf_economy %>% 
+  autoplot(Exports) +
+  labs(y = "% of GDP", title = "Exports: Central African Republic")
+# - plot: stl dcmp
+dcmp <- caf_economy %>% model(stl = STL(Exports))
+dcmp %>% components() %>% autoplot()
+# - plot: acf
+caf_economy %>% ACF(Exports) %>% autoplot()
+caf_economy %>% PACF(Exports) %>% autoplot() # last sig spike "2"
+# - null: data is stationary
+caf_economy %>% features(Exports, unitroot_kpss) # not 
+# - determine the number of differences
+caf_economy %>% features(Exports, unitroot_ndiffs)
+# - null: data is stationary
+caf_economy %>% 
+  mutate(diff_Exports = difference(Exports)) %>% 
+  features(Exports, unitroot_kpss) 
+caf_economy %>% 
+  mutate(diff_Exports = difference(Exports)) %>% 
+  features(Exports, ljung_box, lag = 10) 
+
+# - plots: (differenced)
+caf_economy %>% autoplot(difference(Exports)) + ggtitle("Differenced")
+caf_economy %>% ACF(difference(Exports)) %>% autoplot() # Suggests "MA(3)"
+caf_economy %>% PACF(difference(Exports)) %>% autoplot() # Suggests "AR(2)"
+
+# Model: Benchmark
+# - fit
+fit_benchmark <- caf_economy %>%
+  model(Mean = MEAN(Exports),
+        Naive = NAIVE(Exports),
+        Drift = NAIVE(Exports ~ drift()),
+        Holt = ETS(Exports ~ error("A") + trend("A") + season("N"))
+  )
+# - diagnostic
+fit_benchmark %>% glance()
+# - forecast
+fit_benchmark %>% forecast(h = 10) %>% autoplot(caf_economy, level = NULL)
+fit_benchmark %>% forecast(h = 10) %>% accuracy(egypt_economy)
+
+
+# Model: ARIMA 
+# - fit
+fit_arima <- caf_economy %>% 
+  model(A_210 = ARIMA(Exports ~ pdq(2,1,0)),
+        A_013 = ARIMA(Exports ~ pdq(0,1,3)),
+        stepwise = ARIMA(Exports),
+        search = ARIMA(Exports, stepwise = FALSE))
+# - diagnostic
+fit_arima %>% pivot_longer(cols = !Country, 
+                           names_to = "Model_Name", values_to = "Orders")
+fit_arima %>% report() %>% arrange(AICc) # best = search_310
+# - forecast
+fit_arima %>% forecast(h = 10) %>% autoplot(caf_economy, level = NULL)
+# - residuals
+fit_arima %>% select(search) %>% gg_tsresiduals()
+# - null: residuals are white noise
+fit_arima %>% augment() %>% 
+  filter(.model == "search") %>% 
+  features(.innov, ljung_box, lag = 10, dof = 3)
+
+#
+# US Employment ----
+# data
+us_employment
+# - filter: Retail Trade
+us_retail_employment <- us_employment %>%
+  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
+  select(-Series_ID)
+
+# eda
+us_retail_employment %>% 
+  autoplot(Employed) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+# - acf
+us_retail_employment %>% ACF(Employed) %>% autoplot()
+# - classical decomposition 
+us_retail_employment %>% model(classical_decomposition(Employed, type = "additive")) %>%
+  components() %>% autoplot() +
+  labs(title = "Classical additive decomposition of total
+                  US retail employment")
+# - stl decomposition
+dcmp <- us_retail_employment %>% model(stl = STL(Employed))
+dcmp %>% components()
+dcmp %>% components() %>% as_tsibble() %>%
+  autoplot(Employed, colour="gray") +
+  geom_line(aes(y=trend), colour = "#D55E00") +
+  geom_line(aes(y=season_adjust), colour = "#0072B2") +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+dcmp %>% components() %>% autoplot()
+
+dcmp_7 <- us_retail_employment %>% 
+  model(STL(Employed ~ trend(window = 7), robust = TRUE)) %>%
+  components() %>% 
+  select(-.model)
+dcmp_7 %>% 
+  model(NAIVE(season_adjust)) %>% 
+  forecast() %>% 
+  autoplot(dcmp_7)
+
+fit_dcmp <- us_retail_employment %>%
+  model(stlf = decomposition_model(
+    STL(Employed ~ trend(window = 7), robust = TRUE),
+    NAIVE(season_adjust)
+  ))
+fit_dcmp %>%
+  forecast() %>%
+  autoplot(us_retail_employment)+
+  labs(y = "Number of people",
+       title = "US retail employment")
+fit_dcmp %>% gg_tsresiduals()
+
+us_retail_employment %>% 
+  model(STL(Employed ~ trend(window = 7) + season(window = "periodic")),
+            robust = TRUE) %>%
+  components() %>%
+  autoplot()
+# - X-11 decomposition
+x11_dcmp <- us_retail_employment %>%
+  model(x11 = X_13ARIMA_SEATS(Employed ~ x11())) %>%
+  components()
+x11_dcmp %>%
+  ggplot(aes(x = Month)) +
+  geom_line(aes(y = Employed, colour = "Data")) +
+  geom_line(aes(y = season_adjust, colour = "Seasonally Adjusted")) +
+  geom_line(aes(y = trend, colour = "Trend")) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail") +
+  scale_colour_manual(
+    values = c("gray", "#0072B2", "#D55E00"),
+    breaks = c("Data", "Seasonally Adjusted", "Trend")
+  )
+x11_dcmp %>% autoplot() +
+  labs(title = "Decomposition of total US retail employment using X-11.")
+# - SEATS
+seats_dcmp <- us_retail_employment %>%
+  model(seats = X_13ARIMA_SEATS(Employed ~ seats())) %>%
+  components()
+seats_dcmp %>% 
+  autoplot() + 
+  labs(title = "Decomposition of total US retail employment using SEATS")
+
 #
 # Austrialian Retail ----
 # data
@@ -255,149 +579,345 @@ print_retail %>%
 
 
 #
-# US Employment ----
+# Australian Tourism ----
+
 # data
-us_employment
-# - filter: Retail Trade
-us_retail_employment <- us_employment %>%
-  filter(year(Month) >= 1990, Title == "Retail Trade") %>%
-  select(-Series_ID)
+tourism
+# - filter: Holidays
+aus_holidays <- tourism %>%
+  filter(Purpose == "Holiday") %>%
+  summarise(Trips = sum(Trips)/1e3)
 
 # eda
-us_retail_employment %>% 
-  autoplot(Employed) +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail")
-# - classical decomposition 
-us_retail_employment %>% model(classical_decomposition(Employed, type = "additive")) %>%
-  components() %>% autoplot() +
-  labs(title = "Classical additive decomposition of total
-                  US retail employment")
-# - stl decomposition
-dcmp <- us_retail_employment %>% model(stl = STL(Employed))
-dcmp %>% components()
-dcmp %>% components() %>% as_tsibble() %>%
-  autoplot(Employed, colour="gray") +
-  geom_line(aes(y=trend), colour = "#D55E00") +
-  geom_line(aes(y=season_adjust), colour = "#0072B2") +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail")
-dcmp %>% components() %>% autoplot()
-# - X-11 decomposition
-x11_dcmp <- us_retail_employment %>%
-  model(x11 = X_13ARIMA_SEATS(Employed ~ x11())) %>%
-  components()
-x11_dcmp %>%
-  ggplot(aes(x = Month)) +
-  geom_line(aes(y = Employed, colour = "Data")) +
-  geom_line(aes(y = season_adjust, colour = "Seasonally Adjusted")) +
-  geom_line(aes(y = trend, colour = "Trend")) +
-  labs(y = "Persons (thousands)",
-       title = "Total employment in US retail") +
-  scale_colour_manual(
-    values = c("gray", "#0072B2", "#D55E00"),
-    breaks = c("Data", "Seasonally Adjusted", "Trend")
-  )
-x11_dcmp %>% autoplot() +
-  labs(title = "Decomposition of total US retail employment using X-11.")
-# - SEATS
-seats_dcmp <- us_retail_employment %>%
-  model(seats = X_13ARIMA_SEATS(Employed ~ seats())) %>%
-  components()
-seats_dcmp %>% 
-  autoplot() + 
-  labs(title = "Decomposition of total US retail employment using SEATS")
-
-# STL Decomposition
-us_retail_employment %>%
-  model(STL(Employed ~ trend(window = 7) + season(window = "periodic"),
-        robust = TRUE)) %>%
-  components() %>%
-  autoplot()
-
-# Chapter 4: Time Series Features ----
-
-# Simple Statistics
-tourism %>%
-  features(Trips, list(mean = mean)) %>%
-  arrange(mean)
-
-tourism %>% features(Trips, quantile)
-
-# ACF 
-tourism %>% features(Trips, feat_acf)
-
-# STL
-tourism %>%
-  features(Trips, feat_stl) %>%
-  ggplot(aes(x = trend_strength, y = seasonal_strength_year,
-             col = Purpose)) +
+# - summary statistics
+tourism %>% 
+  features(Trips, list(mean = mean)) %>% 
+  arrange(-mean)
+tourism %>% 
+  features(Trips, quantile)
+# - acf
+tourism %>% 
+  features(Trips, feat_acf)
+# - decomposition
+tourism %>% 
+  features(Trips, feat_stl) %>% 
+  ggplot(aes(trend_strength, seasonal_strength_year, color = Purpose)) +
   geom_point() +
-  facet_wrap(vars(State))
-
+  facet_wrap(~State)
 tourism %>%
   features(Trips, feat_stl) %>%
-  filter(
-    seasonal_strength_year == max(seasonal_strength_year)
-  ) %>%
+  filter(seasonal_strength_year == max(seasonal_strength_year)) %>%
   left_join(tourism, by = c("State", "Region", "Purpose")) %>%
   ggplot(aes(x = Quarter, y = Trips)) +
   geom_line() +
   facet_grid(vars(State, Region, Purpose))
 
-# Chapter 5: Forecaster's Toolbox ----
 
-# WorkFlow
-# - tidy
-gdppc <- global_economy %>%
-  mutate(GDP_per_capita = GDP / Population)
-# - visualize
-gdppc %>%
-  filter(Country == "Sweden") %>%
-  autoplot(GDP_per_capita) +
-  labs(y = "$US", title = "GDP per capita for Sweden")
-# - specify & estimate
-fit <- gdppc %>%
-  model(trend_model = TSLM(GDP_per_capita ~ trend()))
-# - evaluate
-# - forcast
-fit %>%
-  forecast(h = "3 years") %>%
-  filter(Country == "Sweden") %>%
-  autoplot(gdppc) +
-  labs(y = "$US", title = "GDP per capita for Sweden")
+# eda
+# - plot: time
+aus_holidays %>% autoplot()
+# - plot: ACF
+aus_holidays %>% ACF() %>% autoplot()
+# - plot: dcmp
+dcmp <- aus_holidays %>% model(stl = STL(Trips))
+dcmp %>% components() %>% autoplot()
 
-# Simple Forcasting Methods
-bricks <- aus_production %>% filter_index("1970 Q1" ~ "2004 Q4")
+# model
+# - fit
+fit <- aus_holidays %>%
+  model(
+    SES = ETS(Trips ~ error("A") + trend("N") + season("N")),
+    Holt = ETS(Trips ~ error("A") + trend("A") + season("N")),
+    HW_additive = ETS(Trips ~ error("A") + trend("A") + season("A")),
+    HW_multiplicative = ETS(Trips ~ error("M") + trend("A") + season("M"))
+  )
+# - forecast
+fit %>% forecast(h = "3 years") %>% autoplot(aus_holidays, level = NULL)
+# - metrics
+fit %>% forecast(h = "3 years") %>% accuracy(aus_holidays)
+#
+# Australian Production ----
+
+# data
+aus_production
+# - filer: 1992 >
+recent_production <- aus_production %>% filter(year(Quarter) >= 1992)
+# - filter: Year 1970 - 2004
+production <- aus_production %>% filter_index("1992 Q1" ~ "2006 Q4")
+
+# BRICKS
+# eda
+production %>% autoplot(Bricks) +
+  labs(x = "Time", y = "Brick Production")
+
+# model
 # - mean method
-bricks %>% model(MEAN(Bricks))
+fit_bricks_Mean <- production %>% model(MEAN(Bricks))
+fit_bricks_Mean %>% report()
 # - naive method
-bricks %>% model(NAIVE(Bricks))
+fit_bricks_Naive <- production %>% model(NAIVE(Bricks))
+fit_bricks_Naive %>% report()
 # - seasonal naive method
-bricks %>% model(SNAIVE(Bricks ~ lag("year")))
+fit_bricks_SNaive <- production %>% model(SNAIVE(Bricks ~ lag("year")))
+fit_bricks_SNaive %>% report()
 # - drift method
-bricks %>% model(RW(Bricks ~ drift()))
+fit_bricks_RW <- production %>% model(RW(Bricks ~ drift()))
 
-# - Example: Australian Quarterly Beer Production
-train <- aus_production %>% filter_index("1992 Q1" ~ "2006 Q4")
-beer_fit <- train %>%
+# forecast
+# - mean method
+fit_bricks_Mean %>% forecast(h = 10) %>% 
+  autoplot(production)
+# - naive method
+fit_bricks_Naive %>% forecast(h = 10) %>% 
+  autoplot(production)
+# - seasonal naive method
+fit_bricks_SNaive %>% forecast(h = 10) %>% 
+  autoplot(production)
+# - drift method
+fit_bricks_RW %>% forecast(h = 10) %>% 
+  autoplot(production)
+
+
+# BEER
+# eda
+production %>% autoplot(Beer) +
+  labs(x = "Time", y = "Beer Production")
+
+# model
+# - train set
+beer_train <- recent_production %>% 
+  filter(year(Quarter) <= 2007)
+# - fit
+fit_beer <- beer_train %>% 
   model(
     Mean = MEAN(Beer),
-    `Naïve` = NAIVE(Beer),
-    `Seasonal naïve` = SNAIVE(Beer)
+    Naive = NAIVE(Beer),
+    SNaive = SNAIVE(Beer),
+    Drift = RW(Beer ~ drift())
   )
-beer_fc <- beer_fit %>% forecast(h = 14)
+fit_beer %>% glance()
+fit_beer %>% augment()
 
-beer_fc %>%
-  autoplot(train, level = NULL) +
-  autolayer(filter_index(aus_production, "2007 Q1" ~ .),colour = "black") +
-  labs(y = "Megalitres",
-       title = "Forecasts for quarterly beer production") +
-  guides(colour = guide_legend(title = "Forecast"))
+# forecast
+# - forcast
+fc_beer <- fit_beer %>% forecast(h = 10)
+# - plot
+fc_beer %>% 
+  autoplot(recent_production, level = NULL) +
+  labs(y = "Megaliters", title = "Forecast: Quarterly Beer Production")
 
-# - Example: Google Daily Closing Stock Price
+# diagnostic
+# - accuracy
+fc_beer %>% accuracy(recent_production)
+#
+# Google Stock ----
 
-# Chapter 6: Judgemental Forecasts ----
+# data
+gafa_stock
+# - filter: Google, Year >= 2015
+google_stock <- gafa_stock %>% 
+  filter(Symbol == "GOOG",
+         year(Date) >= 2015) %>% 
+  mutate(day = row_number()) %>% 
+  update_tsibble(index = day, regular = TRUE)
+# - filter: Year = 2015
+google_2015 <- google_stock %>% filter(year(Date) == 2015)
+
+
+# eda
+google_2015 %>% autoplot(Close) +
+  labs(title = "Google Stock (2015)")
+# - null: data is stationary
+google_2015 %>% features(Close, unitroot_kpss)
+# - determine the appropriate number of differences
+google_2015 %>% features(Close, unitroot_ndiffs)
+# - null: data is stationary
+google_2015 %>% 
+  mutate(diff_close = difference(Close)) %>% 
+  features(diff_close, ljung_box, lag = 10)
+google_2015 %>% 
+  mutate(diff_close = difference(Close)) %>% 
+  features(diff_close, unitroot_kpss)
+
+# model
+fit_google <- google_2015 %>%
+  model(
+    Mean = MEAN(Close),
+    Naive = NAIVE(Close),
+    Drift = NAIVE(Close ~ drift())
+  )
+
+# diagnostics
+# - model
+fit_google %>% select(Naive) %>% report()
+# - residuals
+fit_google %>% select(Naive) %>% augment()
+# - plot: summary
+fit_google %>% select(Naive) %>% gg_tsresiduals()
+# - statistical tests
+fit_google %>% select(Naive) %>% augment() %>% 
+  features(.innov, box_pierce, lag = 10, dof = 0) # H0:  
+fit_google %>% select(Naive) %>% augment() %>% 
+  features(.innov, ljung_box, lag = 10, dof = 0) # H0: 
+
+
+# forecast
+# - data: 2015
+# - plot
+google_2015 %>%
+  model(NAIVE(Close)) %>%
+  forecast(h = 10) %>%
+  autoplot(google_2015)
+
+fit_google %>% select(Naive) %>% 
+  forecast(h = 10) %>% 
+  hilo()
+
+# - data: January 2016
+google_jan_2016 <- google_stock %>%
+  filter(yearmonth(Date) == yearmonth("2016 Jan"))
+# - fc
+fc_google <- fit_google %>% forecast(google_jan_2016)
+fc_google %>% 
+  autoplot(bind_rows(google_2015, google_jan_2016), level = NULL)
+# - metrics
+fc_google %>% accuracy(google_stock)
+# - bootstraping
+boot_google <- fit_google %>% select(Naive) %>% 
+  generate(h = 30, times =  5, bootstrap = TRUE)
+
+google_2015 %>%
+  ggplot(aes(x = day)) +
+  geom_line(aes(y = Close)) +
+  geom_line(aes(y = boot_google, colour = as.factor(.rep)),
+            data = boot_google) +
+  labs(title="Google daily closing stock price", y="$US" )
+#
+
+# Egg Prices ----
+
+# data
+eggs <- prices %>% 
+  select(year, eggs) %>% 
+  filter(!is.na(eggs))
+
+# eda
+eggs %>% autoplot()
+eggs %>% ACF() %>% autoplot()
+
+# model
+fit_eggs <- eggs %>% model(RW(log(eggs) ~ drift()))
+fit_eggs %>% report()
+
+# forecast
+fit_eggs %>% forecast(h = 50) %>% 
+  autoplot(eggs, 
+           level = 80, point_forecast = lst(mean,median))
+#
+# Internet Usage ----
+
+# data
+www_usage <- as_tsibble(WWWusage)
+
+# eda
+# - plot: time
+www_usage %>% 
+  autoplot() +
+  labs(x="Minute", y="Number of users",
+       title = "Internet usage per minute")
+# - plot: acf
+www_usage %>% ACF(value) %>% autoplot()
+# - plot: stl dcmp
+dcmp <- www_usage %>% model(stl = STL(value))
+dcmp %>% components() %>% autoplot()
+
+# model
+# - fit
+fit <- www_usage %>%
+  stretch_tsibble(.init = 10) %>%
+  model(
+    SES = ETS(value ~ error("A") + trend("N") + season("N")),
+    Holt = ETS(value ~ error("A") + trend("A") + season("N")),
+    Damped = ETS(value ~ error("A") + trend("Ad") + season("N"))
+  )
+# - diagnostics
+fit %>% forecast(h = 1) %>% accuracy(www_usage)
+# - final fit
+fit_final <- www_usage %>%
+  model(
+    Damped = ETS(value ~ error("A") + trend("Ad") + season("N"))
+  )
+fit_final %>% report()
+# - plot: forecast
+fit_final %>%
+  forecast(h = 10) %>%
+  autoplot(www_usage) +
+  labs(x="Minute", y="Number of users",
+       title = "Internet usage per minute")
+
+#
+# Leisure ----
+
+# data 
+us_employment
+# - filter: Leisure & Hospitality
+leisure <- us_employment %>%
+  filter(Title == "Leisure and Hospitality",
+         year(Month) > 2000) %>%
+  # population adjustment
+  mutate(Employed = Employed/1000) %>%
+  select(Month, Employed)
+
+# eda
+# - plot: time plot
+leisure %>% 
+  autoplot(Employed) +
+  labs(title = "US employment: leisure and hospitality",
+       y="Number of people (millions)")
+# - plot: stl dcmp
+leisure %>% 
+  model(stl = STL(Employed)) %>% 
+  components() %>% 
+  autoplot()
+# - plot: ACF & PACF
+leisure %>% gg_tsdisplay(Employed, plot_type = "partial")
+# null: data is stationary
+leisure %>% features(Employed, unitroot_kpss) # not 
+# - determine the number of differences
+leisure %>% features(Employed, unitroot_ndiffs)
+# - null: data is stationary
+leisure %>% 
+  mutate(diff_Employed = difference(Employed)) %>% 
+  features(diff_Employed, unitroot_kpss) 
+leisure %>% 
+  mutate(diff_Employed = difference(Employed)) %>% 
+  features(diff_Employed, ljung_box, lag = 10) 
+# - plot: ACF & PACP
+leisure %>% gg_tsdisplay(difference(Employed, lag = 12), plot_type = "partial")
+
+# Model: ARIMA
+# - fit
+fit_arima <- leisure %>%
+  model(
+    arima_012_011 = ARIMA(Employed ~ pdq(0,1,2) + PDQ(0,1,1)),
+    arima_210_011 = ARIMA(Employed ~ pdq(2,1,0) + PDQ(0,1,1)),
+    auto = ARIMA(Employed, stepwise = FALSE, approx = FALSE)
+  )
+# - diagnostics
+fit_arima %>% pivot_longer(everything(), names_to = "Model name",
+                           values_to = "Orders")
+glance(fit_arima) %>% arrange(AICc) %>% select(.model:BIC)
+# - residuals
+fit_arima %>% select(auto) %>% gg_tsresiduals(lag = 36)
+# - null: residuals are white noise
+augment(fit_arima) %>% features(.innov, ljung_box, lag=24, dof=4)
+# - plot
+fit_arima %>% forecast(h=36) %>%
+  filter(.model=='auto') %>%
+  autoplot(leisure) +
+  labs(title = "US employment: leisure and hospitality",
+       y="Number of people (millions)")
+#
 # Chapter 7: Regression Models ----
 
 # Simple Linear Regression
